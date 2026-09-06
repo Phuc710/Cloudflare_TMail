@@ -11,36 +11,49 @@
 # /bin/bash /home/kaishopi/domains/tmail.kaishop.id.vn/public_html/git_deploy.sh
 # ==============================================================================
 
-# Project directory (Correct for tmail subdomain)
-PROJECT_DIR="/home/kaishopi/domains/tmail.kaishop.id.vn/public_html"
+# Auto-detect project directory from script location, fallback to default hosting path
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "${SCRIPT_DIR}/scripts/build.php" ]; then
+    PROJECT_DIR="${SCRIPT_DIR}"
+else
+    PROJECT_DIR="/home/kaishopi/domains/tmail.kaishop.id.vn/public_html"
+fi
+
 LOG_FILE="${PROJECT_DIR}/storage/logs/cron_deploy.log"
 BRANCH="main"
 
 # Ensure log directory exists
 mkdir -p "$(dirname "$LOG_FILE")"
 
-# Execute pull
-{
+run_deploy() {
     echo "------------------------------------------------------------"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting Git Pull..."
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting Git Pull & Deploy..."
     
     cd "$PROJECT_DIR" || { echo "ERROR: Could not change directory to $PROJECT_DIR"; exit 1; }
     
     # Run git pull
     # We use --ff-only to ensure we don't accidentally create merge commits on server
     git pull origin "$BRANCH" --ff-only 2>&1
-    
     EXIT_CODE=$?
     
     if [ $EXIT_CODE -eq 0 ]; then
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Success: Code updated."
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Success: Code updated from branch $BRANCH."
         
         # Build production assets if build script is present
         if [ -f "$PROJECT_DIR/scripts/build.php" ]; then
-            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Recompiling production assets..."
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Recompiling production assets (Pure PHP)..."
             php "$PROJECT_DIR/scripts/build.php" 2>&1
         fi
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Deployment completed successfully."
     else
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Error: Git pull failed with exit code $EXIT_CODE."
     fi
-} >> "$LOG_FILE" 2>&1
+}
+
+# If running interactively in a terminal, print to screen AND append to log file.
+# If running via automated cron job, write to log file.
+if [ -t 1 ]; then
+    run_deploy 2>&1 | tee -a "$LOG_FILE"
+else
+    run_deploy >> "$LOG_FILE" 2>&1
+fi

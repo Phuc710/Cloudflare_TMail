@@ -48,9 +48,6 @@ try {
 } catch (\Throwable $e) {
     $activeDomains = ['kaishop.id.vn'];
 }
-$homeCssVer = @filemtime(__DIR__ . '/css/home.css') ?: time();
-$longPollingVer = @filemtime(__DIR__ . '/js/longPolling.js') ?: time();
-$appJsVer = @filemtime(__DIR__ . '/js/app.js') ?: time();
 $requestUri = (string) ($_SERVER['REQUEST_URI'] ?? '/');
 $requestPath = parse_url($requestUri, PHP_URL_PATH) ?? '/';
 $isTwoFaRoute = (bool) preg_match('#/2fa/?$#i', $requestPath) || (($_GET['mode'] ?? '') === 'twofa');
