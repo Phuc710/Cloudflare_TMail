@@ -262,7 +262,7 @@ $structuredData = [
                                 </button>
                                 <div id="emailSpinner" class="email-spinner-indicator hidden" title="Đang xử lý..."></div>
                             </div>
-                            <button id="getMailBtn" class="btn-primary-action <?= empty($initialEmail) ? 'is-disabled' : '' ?>" type="button" <?= empty($initialEmail) ? 'disabled' : '' ?>>
+                            <button id="getMailBtn" class="btn-primary-action" type="button">
                                 <span>Get Mail</span>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                                     <line x1="5" y1="12" x2="19" y2="12" />

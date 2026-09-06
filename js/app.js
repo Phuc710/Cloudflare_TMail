@@ -2085,9 +2085,8 @@ class KaiMailUserPage {
         }
 
         if (this.getMailBtn && !this.state.loading) {
-            const hasInput = rawInput !== "";
-            this.getMailBtn.disabled = !hasInput;
-            this.getMailBtn.classList.toggle("is-disabled", !hasInput);
+            this.getMailBtn.disabled = false;
+            this.getMailBtn.classList.remove("is-disabled");
         }
     }
 
