@@ -59,7 +59,7 @@ Tệp JSON này là "Single Source of Truth" để tầng Backend ánh xạ đư
 
 Dự án trang bị hai bộ công cụ biên dịch chạy song song, đảm bảo hoạt động hoàn hảo trên mọi môi trường:
 
-### 3.1. Node.js Compiler: `scripts/build.mjs`
+### 3.1. Node.js Compiler: `scripts/build.mjs` (Enterprise Mangler & Minifier)
 - **Mục đích**: Dành cho môi trường phát triển (Local Dev) và CI/CD có sẵn Node.js.
 - **Cách chạy**:
   ```bash
@@ -67,12 +67,13 @@ Dự án trang bị hai bộ công cụ biên dịch chạy song song, đảm b�
   # Hoặc
   node scripts/build.mjs
   ```
-- **Tính năng**:
-  - Tự động dọn dẹp các tệp build cũ trong `static/css/` và `static/js/`.
-  - Nén CSS: Loại bỏ chú thích, khoảng trắng thừa, nén bộ chọn.
-  - Tự động viết lại đường dẫn tương đối (Path Rewriting): Đổi `../assets/` thành `../../assets/` để tài nguyên font/cursor/ảnh load chính xác từ thư mục con `static/css/`.
-  - Nén JS: Loại bỏ chú thích và dòng trống an toàn.
-  - Sinh mã hash SHA-256 10 ký tự và xuất ra `static/manifest.json`.
+- **Tính năng (Chuẩn Anthropic / Big Tech)**:
+  - **Terser AST Mangling**: Thu gọn toàn bộ biến cục bộ, tham số hàm thành `a, b, c, d, e...` (-48% dung lượng JS).
+  - **Dead-Code Elimination & Syntax Inlining**: Ép hằng số, ép boolean `!0 / !1`, loại bỏ console/debugger thừa.
+  - **Source Map Suppression**: Tắt hoàn toàn bản đồ mã nguồn, người ngoài xem DevTools chỉ thấy 1 khối code đặc quánh không thể reverse-engineer.
+  - **Nén CSS**: Loại bỏ chú thích, khoảng trắng thừa, nén bộ chọn.
+  - **Path Rewriting**: Đổi `../assets/` thành `../../assets/` để font/cursor/ảnh load chuẩn từ `static/css/`.
+  - **Content Hashing**: Sinh mã hash SHA-256 10 ký tự và ghi đè vào `static/manifest.json`.
 
 ### 3.2. PHP Pure Compiler: `scripts/build.php`
 - **Mục đích**: Dành cho máy chủ Production (Shared Hosting cPanel/DirectAdmin, VPS) không cài đặt Node.js/NPM.

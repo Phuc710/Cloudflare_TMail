@@ -39,9 +39,10 @@ run_deploy() {
     if [ $EXIT_CODE -eq 0 ]; then
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Success: Code updated from branch $BRANCH."
         
-        # Build production assets if build script is present
-        if [ -f "$PROJECT_DIR/scripts/build.php" ]; then
-            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Recompiling production assets (Pure PHP)..."
+        # If static assets were already compiled and committed from dev (Terser mangled), keep them.
+        # Otherwise, fallback to pure PHP compiler if manifest is missing.
+        if [ ! -f "$PROJECT_DIR/static/manifest.json" ] && [ -f "$PROJECT_DIR/scripts/build.php" ]; then
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Assets manifest missing. Compiling via Pure PHP fallback..."
             php "$PROJECT_DIR/scripts/build.php" 2>&1
         fi
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Deployment completed successfully."
