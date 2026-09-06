@@ -45,14 +45,6 @@ final class Request
         $headers = self::extractHeaders();
         $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 
-        // Handle method override for POST requests
-        if ($method === 'POST') {
-            $override = $headers['x-http-method-override'] ?? $_POST['_method'] ?? null;
-            if (is_string($override) && $override !== '') {
-                $method = strtoupper(trim($override));
-            }
-        }
-
         $rawBody = (string) ($_SERVER['KAIMAIL_RAW_BODY'] ?? '');
         if ($rawBody === '') {
             $rawBody = (string) file_get_contents('php://input');
@@ -68,6 +60,14 @@ final class Request
         }
 
         $body = !empty($_POST) ? array_merge($_POST, $parsedJson) : $parsedJson;
+
+        // Handle method override for POST requests (Header, POST form, or JSON body)
+        if ($method === 'POST') {
+            $override = $headers['x-http-method-override'] ?? $body['_method'] ?? $_POST['_method'] ?? null;
+            if (is_string($override) && $override !== '') {
+                $method = strtoupper(trim($override));
+            }
+        }
 
         $uri = (string) ($_SERVER['REQUEST_URI'] ?? '/');
         $path = (string) parse_url($uri, PHP_URL_PATH);

@@ -624,20 +624,26 @@ class AdminDashboardPage {
         const modalTitle = document.getElementById("messagesModalTitle");
         const modalBody = document.getElementById("messagesModalBody");
         modalTitle.textContent = emailAddress;
-        modalBody.innerHTML = `<div class="loading-state"><div class="spinner"></div></div>`;
+        modalBody.innerHTML = `
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <span class="loading-text">Đang tải tin nhắn...</span>
+            </div>
+        `;
 
         this.core.openModal("messagesModal");
 
         try {
             const { ok, data } = await this.core.fetchJson(`/api/admin/messages.php?email_id=${emailId}`);
             if (!ok || !data) {
-                modalBody.innerHTML = `<div class="error-state">Không thể tải danh sách tin nhắn</div>`;
+                const errMsg = data?.error || data?.message || "Không thể tải danh sách tin nhắn";
+                modalBody.innerHTML = `<div class="error-state">${this.core.escapeHtml(errMsg)}</div>`;
                 return;
             }
 
             const messages = Array.isArray(data.messages) ? data.messages : [];
             if (!messages.length) {
-                modalBody.innerHTML = `<div class="empty-state-sm">Email này chưa có tin nhắn</div>`;
+                modalBody.innerHTML = `<div class="empty-state-sm">Email này chưa có tin nhắn nào</div>`;
                 return;
             }
 

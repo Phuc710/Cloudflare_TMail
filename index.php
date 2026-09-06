@@ -219,16 +219,7 @@ $structuredData = [
             </div>
 
             <div class="topbar-clock" id="topbarClock" title="Giờ chuẩn Việt Nam (GMT+7)">
-                <span class="clock-live-indicator" aria-hidden="true">
-                    <span class="clock-pulse"></span>
-                    <span class="clock-dot"></span>
-                </span>
-                <svg class="clock-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12 6 12 12 16 14" />
-                </svg>
                 <span class="clock-time" id="clockTime">--:--:--</span>
-                <span class="clock-badge">VN (GMT+7)</span>
             </div>
         </header>
 
@@ -460,6 +451,34 @@ $structuredData = [
                 </section>
             </div>
         </main>
+
+        <footer class="user-page-footer">
+            <div class="footer-container">
+                <div class="footer-left">
+                    <span class="footer-brand-title">KaiMail</span>
+                    <span class="footer-sep" aria-hidden="true">•</span>
+                    <span class="footer-desc">Dịch vụ Temp Mail &amp; Trình xác thực 2FA miễn phí</span>
+                </div>
+                <div class="footer-right">
+                    <span class="footer-eco-label">Hệ sinh thái:</span>
+                    <a href="https://kaishop.id.vn/" target="_blank" rel="noopener noreferrer" class="footer-link">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"></path>
+                        </svg>
+                        <span>kaishop.id.vn</span>
+                    </a>
+                    <span class="footer-dot-sep" aria-hidden="true">•</span>
+                    <a href="https://t.me/KaiHub_bot" target="_blank" rel="noopener noreferrer" class="footer-link footer-link-tg">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.19-.08-.05-.19-.02-.27 0-.12.03-1.99 1.27-5.62 3.72-.53.36-1.01.54-1.44.53-.47-.01-1.38-.27-2.06-.49-.83-.27-1.49-.42-1.43-.88.03-.24.37-.49 1.02-.75 3.98-1.73 6.64-2.88 7.97-3.44 3.8-1.58 4.59-1.86 5.1-1.87.11 0 .37.03.53.17.14.12.18.28.2.45-.01.07.01.23 0 .32z" />
+                        </svg>
+                        <span>@KaiHub_bot</span>
+                    </a>
+                </div>
+            </div>
+        </footer>
     </div>
 
     <script>

@@ -574,7 +574,7 @@ class AdminCore {
                 return;
             }
 
-            if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(domainName)) {
+            if (!/^[a-z0-9\.\-]+\.[a-z]{2,}$/.test(domainName)) {
                 this.showToast("Domain không đúng định dạng", "error");
                 return;
             }
@@ -607,21 +607,21 @@ class AdminCore {
     }
 
     bindDomainDeleteButtons() {
-        document.querySelectorAll("[data-domain-delete]").forEach((button) => {
-            button.addEventListener("click", async () => {
-                const id = Number(button.getAttribute("data-domain-delete") || "0");
-                const domainName = button.getAttribute("data-domain-name") || "";
-                await this.deleteDomain(id, domainName);
+        document.querySelectorAll("[data-domain-delete]").forEach((btn) => {
+            btn.addEventListener("click", async () => {
+                const id = Number(btn.getAttribute("data-domain-delete") || "0");
+                const name = btn.getAttribute("data-domain-name") || "";
+                await this.deleteDomain(id, name);
             });
         });
     }
 
-    async deleteDomain(id, domainName = "") {
+    async deleteDomain(id, name = "") {
         if (!id) return;
 
         const confirmed = await this.confirmAction({
             title: "Xác nhận xóa domain",
-            text: `Bạn có chắc muốn xóa domain "${domainName}"? Chỉ xóa được domain chưa có email.`,
+            text: `Bạn có chắc muốn xóa domain "${name}"? Chỉ xóa được domain chưa có email.`,
             confirmButtonText: "Xóa domain",
             cancelButtonText: "Hủy",
             icon: "warning",
@@ -629,9 +629,16 @@ class AdminCore {
         if (!confirmed) return;
 
         try {
-            const { ok, data } = await this.postJson("/api/admin/domains.php", {
-                _method: "DELETE",
-                id,
+            const { ok, data } = await this.fetchJson("/api/admin/domains.php", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-HTTP-Method-Override": "DELETE",
+                },
+                body: JSON.stringify({
+                    _method: "DELETE",
+                    id,
+                }),
             });
 
             if (!ok) {

@@ -356,7 +356,7 @@ AdminLayout::begin('Quản lý email', 'emails', (string) ($admin['username'] ??
             <form id="addDomainForm">
                 <div class="form-group">
                     <label for="domainName">Tên domain</label>
-                    <input type="text" id="domainName" placeholder="example.com" pattern="[a-z0-9.-]+" required>
+                    <input type="text" id="domainName" placeholder="example.com" pattern="[a-z0-9\.\-]+" required>
                     <p class="field-note">Không nhập tiền tố `http://` hoặc `www`.</p>
                 </div>
 
