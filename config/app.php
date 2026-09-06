@@ -6,6 +6,7 @@
 
 // Load master configuration
 require_once __DIR__ . '/config.php';
+require_once dirname(__DIR__) . '/includes/Core/bootstrap.php';
 
 // ======================
 // DOMAIN HELPERS

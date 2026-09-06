@@ -30,12 +30,28 @@ Options -Indexes
     Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" env=HTTPS
 </IfModule>
 
+# Cache Control for Static Content-Hashed Assets (1 Year Immutable Cache)
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+</IfModule>
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.(?:[a-f0-9]{8,12}\.min\.(?:css|js)|[a-f0-9]{8,12}\.(?:png|jpg|svg))$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>
+
 # Admin routes - Clean URLs
-RewriteRule ^adminkaishop/login$ adminkaishop/login.php [L]
-RewriteRule ^adminkaishop/emails$ adminkaishop/emails.php [L]
-RewriteRule ^adminkaishop/expired$ adminkaishop/expired.php [L]
-RewriteRule ^adminkaishop/docs-domain$ adminkaishop/docs-domain.php [L]
-RewriteRule ^adminkaishop/docs-api$ adminkaishop/docs-api.php [L]
+RewriteRule ^adminkaishop/login/?$ adminkaishop/login.php [L]
+RewriteRule ^adminkaishop/emails/?$ adminkaishop/emails.php [L]
+RewriteRule ^adminkaishop/expired/?$ adminkaishop/expired.php [L]
+RewriteRule ^adminkaishop/docs-domain/?$ adminkaishop/docs-domain.php [L]
+RewriteRule ^adminkaishop/docs-api/?$ adminkaishop/docs-api.php [L]
 
 # API routes - Clean RESTful URLs
 # Route all /api/* requests to api/index.php
@@ -45,7 +61,7 @@ RewriteRule ^api/(.*)$ api/index.php [L,QSA]
 
 # Redirect trailing slashes for non-directories
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)/$ /$1 [L,R=301]
+RewriteRule ^(.+)/$ $1 [L,R=301]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

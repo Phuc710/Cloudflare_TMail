@@ -3,3 +3,5 @@
 !.env.example
 storage/cache/
 storage/logs/*.log
+scratch/
+node_modules/

@@ -51,7 +51,7 @@ final class AdminLayout
     <title>{$safeTitle} - KaiMail Admin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="{$baseUrl}/assets/kaishop_favicon.png">
     <link rel="shortcut icon" type="image/png" href="{$baseUrl}/assets/kaishop_favicon.png">
     <link rel="stylesheet" href="{$adminCssHref}">
@@ -141,26 +141,6 @@ HTML;
 
     private static function buildVersionedAssetUrl(string $assetPath): string
     {
-        $assetPath = trim($assetPath);
-        if ($assetPath === '') {
-            return rtrim((string) BASE_URL, '/');
-        }
-
-        if (str_starts_with($assetPath, 'http://') || str_starts_with($assetPath, 'https://')) {
-            return $assetPath;
-        }
-
-        $normalized = str_starts_with($assetPath, '/') ? $assetPath : '/' . $assetPath;
-        $rootDir = dirname(__DIR__);
-        $localPath = $rootDir . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($normalized, '/'));
-        $base = rtrim((string) BASE_URL, '/');
-        $url = $base . $normalized;
-
-        if (is_file($localPath)) {
-            $version = (string) (filemtime($localPath) ?: time());
-            return $url . '?v=' . rawurlencode($version);
-        }
-
-        return $url;
+        return \KaiMail\Core\Services\AssetService::url($assetPath);
     }
 }

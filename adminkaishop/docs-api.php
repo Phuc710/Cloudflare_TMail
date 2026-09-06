@@ -15,8 +15,9 @@ AdminLayout::begin('API Integration Docs', 'docs-api', $adminName);
 ?>
 <style>
     .docs-container {
-        max-width: 1100px;
-        margin: 0 auto;
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
         color: #334155;
     }
 
@@ -314,6 +315,12 @@ AdminLayout::begin('API Integration Docs', 'docs-api', $adminName);
                         <td><span class="badge-opt">Optional</span></td>
                         <td>Required when <code>name_type=custom</code>; lowercased by server.</td>
                     </tr>
+                    <tr>
+                        <td><code>note</code></td>
+                        <td>string</td>
+                        <td><span class="badge-opt">Optional</span></td>
+                        <td>Ghi chú lưu kèm email (tối đa 500 ký tự).</td>
+                    </tr>
                 </tbody>
             </table>
             <div class="code-wrapper">
@@ -438,11 +445,17 @@ AdminLayout::begin('API Integration Docs', 'docs-api', $adminName);
                         <td><span class="badge-opt">Optional</span></td>
                         <td>When custom, allowed chars: <code>[A-Za-z0-9._-]</code>, lowercased.</td>
                     </tr>
+                    <tr>
+                        <td><code>note</code></td>
+                        <td>string</td>
+                        <td><span class="badge-opt">Optional</span></td>
+                        <td>Ghi chú lưu kèm email khi tạo.</td>
+                    </tr>
                 </tbody>
             </table>
             <div class="code-wrapper">
                 <div class="code-lang">Example Body</div>
-                <pre>{ "name_type": "custom", "email": "Admin.Test", "domain": "kaishop.id.vn", "quantity": 2 }</pre>
+                <pre>{ "name_type": "custom", "email": "Admin.Test", "domain": "kaishop.id.vn", "quantity": 1, "note": "Email test" }</pre>
             </div>
         </div>
     </div>
@@ -450,11 +463,95 @@ AdminLayout::begin('API Integration Docs', 'docs-api', $adminName);
     <div class="endpoint-card">
         <div class="endpoint-header">
             <span class="method get">GET</span>
-            <span class="url">/api/admin/emails.php?page=1&amp;limit=13&amp;search=&amp;domain=&amp;no_message=1</span>
+            <span class="url">/api/admin/emails.php?page=1&amp;limit=13&amp;search=&amp;domain=&amp;created_by=&amp;no_message=1</span>
         </div>
         <div class="endpoint-body">
-            <p>List emails with pagination and optional filters (<code>search</code>, <code>domain</code>,
-                <code>no_message=1</code>).</p>
+            <p>List emails with pagination and multi-dimensional filters:</p>
+            <table class="table-params">
+                <thead>
+                    <tr>
+                        <th>Param</th>
+                        <th>Type</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>page</code></td>
+                        <td>integer</td>
+                        <td>Trang hiện tại. Default <code>1</code>.</td>
+                    </tr>
+                    <tr>
+                        <td><code>limit</code></td>
+                        <td>integer</td>
+                        <td>Số bản ghi/trang. Default <code>13</code>.</td>
+                    </tr>
+                    <tr>
+                        <td><code>search</code></td>
+                        <td>string</td>
+                        <td>Tìm kiếm theo địa chỉ email hoặc nội dung ghi chú (note).</td>
+                    </tr>
+                    <tr>
+                        <td><code>domain</code></td>
+                        <td>string</td>
+                        <td>Lọc theo tên miền cụ thể.</td>
+                    </tr>
+                    <tr>
+                        <td><code>created_by</code></td>
+                        <td>string</td>
+                        <td>Lọc theo nguồn tạo: <code>admin</code>, <code>api</code>, hoặc <code>user</code>.</td>
+                    </tr>
+                    <tr>
+                        <td><code>no_message</code></td>
+                        <td>string</td>
+                        <td>Truyền <code>1</code> để chỉ lấy các email chưa có tin nhắn.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="endpoint-card">
+        <div class="endpoint-header">
+            <span class="method post">POST</span>
+            <span class="url">/api/admin/emails.php (action: update_note)</span>
+        </div>
+        <div class="endpoint-body">
+            <p>Cập nhật hoặc xóa ghi chú (note) cho email.</p>
+            <table class="table-params">
+                <thead>
+                    <tr>
+                        <th>Field</th>
+                        <th>Type</th>
+                        <th>Required</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>action</code></td>
+                        <td>string</td>
+                        <td><span class="badge-req">Required</span></td>
+                        <td>Cố định: <code>update_note</code>.</td>
+                    </tr>
+                    <tr>
+                        <td><code>id</code></td>
+                        <td>integer</td>
+                        <td><span class="badge-req">Required</span></td>
+                        <td>ID của email trong CSDL.</td>
+                    </tr>
+                    <tr>
+                        <td><code>note</code></td>
+                        <td>string</td>
+                        <td><span class="badge-opt">Optional</span></td>
+                        <td>Chuỗi ghi chú mới (tối đa 500 ký tự). Bỏ trống để xóa ghi chú.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="code-wrapper">
+                <div class="code-lang">Example Body</div>
+                <pre>{ "action": "update_note", "id": 105, "note": "Ghi chú tài khoản VIP" }</pre>
+            </div>
         </div>
     </div>
 
@@ -469,6 +566,25 @@ AdminLayout::begin('API Integration Docs', 'docs-api', $adminName);
                 <div class="code-lang">Example Body</div>
                 <pre>{ "ids": [11, 12, 13] }</pre>
             </div>
+        </div>
+    </div>
+
+    <div class="endpoint-card">
+        <div class="endpoint-header">
+            <span class="method get">GET</span>
+            <span class="method post" style="margin-left: 4px;">POST</span>
+            <span class="method put" style="margin-left: 4px;">PUT</span>
+            <span class="method delete" style="margin-left: 4px;">DEL</span>
+            <span class="url" style="margin-left: 8px;">/api/admin/domains.php</span>
+        </div>
+        <div class="endpoint-body">
+            <p>Quản lý danh sách domain của hệ thống:</p>
+            <ul style="padding-left: 1.25rem; line-height: 1.7; color: #475569; font-size: 0.9rem;">
+                <li><code>GET /api/admin/domains.php</code>: Lấy danh sách toàn bộ domain kèm số lượng email trực thuộc.</li>
+                <li><code>POST /api/admin/domains.php</code>: Thêm domain mới (Body: <code>{"domain": "example.com"}</code>).</li>
+                <li><code>PUT /api/admin/domains.php</code>: Bật/tắt trạng thái hoạt động (Body: <code>{"id": 1, "is_active": 1}</code>).</li>
+                <li><code>DELETE /api/admin/domains.php</code>: Xóa domain (Body: <code>{"id": 1}</code>; tự động chặn xóa nếu domain đang có email).</li>
+            </ul>
         </div>
     </div>
 

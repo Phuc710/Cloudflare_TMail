@@ -1,96 +1,71 @@
 <?php
+declare(strict_types=1);
+
 /**
- * KaiMail API Router
- * Clean RESTful API with proper routing
+ * KaiMail RESTful API Router.
+ * Maps REST paths (/api/emails, /api/emails/{email}/messages) into unified Core Controllers.
  */
 
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../config/app.php';
-require_once __DIR__ . '/middleware/ApiSecurity.php';
-require_once __DIR__ . '/services/BaseService.php';
-require_once __DIR__ . '/services/DomainService.php';
-require_once __DIR__ . '/services/EmailService.php';
-require_once __DIR__ . '/controllers/EmailController.php';
+require_once __DIR__ . '/../includes/Core/App.php';
 
-ApiSecurity::setCorsHeaders();
-header('Content-Type: application/json; charset=utf-8');
-ApiSecurity::handlePreflight();
+use KaiMail\Core\App;
+use KaiMail\Core\Controllers\EmailController;
+use KaiMail\Core\Controllers\MessageController;
+use KaiMail\Core\Http\ApiException;
+use KaiMail\Core\Http\Request;
+use KaiMail\Core\Http\Response;
 
-try {
-    ApiSecurity::requireApiAuth();
+App::boot();
 
-    // Get request info
-    $method = $_SERVER['REQUEST_METHOD'];
-    $requestUri = $_SERVER['REQUEST_URI'];
+$request = Request::capture();
 
-    // Parse path - remove base path and query string
-    $basePath = '/kaiMail/api';
-    if (strpos($requestUri, $basePath) === 0) {
-        $requestUri = substr($requestUri, strlen($basePath));
+// Base info endpoint
+$requestUri = (string) ($_SERVER['REQUEST_URI'] ?? '/');
+$path = (string) parse_url($requestUri, PHP_URL_PATH);
+$path = trim((string) preg_replace('#^.*?/api#i', '', $path), '/');
+$segments = $path !== '' ? explode('/', $path) : [];
+
+if (empty($segments)) {
+    if ($request->isMethod('GET')) {
+        Response::json([
+            'name' => 'KaiMail Unified API',
+            'version' => '3.0',
+            'endpoints' => [
+                'POST /api/emails' => 'Tạo email mới (1-10 email cho Bot, tối đa 50 cho Admin)',
+                'GET /api/emails/{email}/messages' => 'Lấy danh sách tin nhắn của email',
+                'GET /api/messages.php?email={email}' => 'Danh sách tin nhắn (Direct)',
+                'GET /api/long-poll.php' => 'Long polling nhận tin nhắn mới realtime',
+            ],
+        ])->setCors($request, BASE_URL)->send();
+    } else {
+        Response::error('Method not allowed', 405)->send();
     }
-
-    // Remove query string
-    $path = strtok($requestUri, '?');
-    $path = trim($path, '/');
-
-    // Split path into segments
-    $segments = $path ? explode('/', $path) : [];
-
-    // Initialize services
-    $db = getDB();
-    $domainService = new DomainService($db);
-    $emailService = new EmailService($db);
-    $emailController = new EmailController($emailService, $domainService);
-
-    // Route handling
-    if (empty($segments)) {
-        // GET /api - API info
-        if ($method === 'GET') {
-            jsonResponse([
-                'name' => 'KaiMail API',
-                'version' => '2.0',
-                'endpoints' => [
-                    'POST /api/emails' => 'Create new email(s)',
-                    'GET /api/emails/{email}/messages' => 'Get messages for email'
-                ]
-            ]);
-        } else {
-            jsonResponse(['error' => 'Method not allowed'], 405);
-        }
-    }
-
-    // Route: /emails
-    if ($segments[0] === 'emails') {
-
-        // POST /api/emails - Create email
-        if ($method === 'POST' && count($segments) === 1) {
-            $emailController->create();
-            exit;
-        }
-
-        // GET /api/emails/{email}/messages - Get messages
-        if ($method === 'GET' && count($segments) === 3 && $segments[2] === 'messages') {
-            $email = urldecode($segments[1]);
-            $emailController->getMessages($email);
-            exit;
-        }
-    }
-
-    // No route matched
-    jsonResponse([
-        'error' => 'Not found',
-        'path' => '/' . $path,
-        'method' => $method
-    ], 404);
-
-} catch (Exception $e) {
-    error_log("API Error: " . $e->getMessage());
-    $message = 'An error occurred';
-    if (EXPOSE_ERROR_DETAILS) {
-        $message = $e->getMessage();
-    }
-    jsonResponse([
-        'error' => 'Internal server error',
-        'message' => $message
-    ], 500);
 }
+
+// REST route: /api/emails
+if ($segments[0] === 'emails') {
+    // GET /api/emails/{email}/messages
+    if (count($segments) === 3 && $segments[2] === 'messages' && $request->isMethod('GET')) {
+        $_GET['email'] = urldecode($segments[1]);
+        App::run(MessageController::class);
+        exit;
+    }
+
+    // POST /api/emails
+    if (count($segments) === 1 && $request->isMethod('POST')) {
+        App::run(EmailController::class);
+        exit;
+    }
+}
+
+// REST route: /api/messages
+if ($segments[0] === 'messages') {
+    App::run(MessageController::class);
+    exit;
+}
+
+// No route matched
+Response::error('Not found', 404, 'NotFound', [
+    'path' => '/' . $path,
+    'method' => $request->getMethod(),
+])->setCors($request, BASE_URL)->send();

@@ -1,0 +1,10 @@
+{
+  "name": "kaimail",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KaiMail - Production Temp Mail Service",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:php": "php scripts/build.php"
+  }
+}

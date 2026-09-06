@@ -5,29 +5,31 @@ require_once __DIR__ . '/../includes/Auth.php';
 Auth::requireLogin();
 
 require_once __DIR__ . '/../includes/AdminLayout.php';
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/Core/App.php';
+
+use KaiMail\Core\App;
+use KaiMail\Core\Services\DomainService;
 
 $admin = ['username' => 'admin'];
 
-$domains = [];
 try {
-    $db = getDB();
-    $stmt = $db->query("SELECT domain FROM domains WHERE is_active = 1 ORDER BY domain ASC");
-    $domains = $stmt->fetchAll(PDO::FETCH_COLUMN);
-} catch (Exception $e) {
+    /** @var DomainService $domainService */
+    $domainService = App::getService(DomainService::class);
+    $domains = array_column($domainService->getActiveDomains(), 'domain');
+} catch (Throwable $e) {
+    $domains = [];
     error_log('Admin index: load domains failed - ' . $e->getMessage());
 }
 
 AdminLayout::begin('Quản lý email', 'emails', (string) ($admin['username'] ?? 'admin'));
 ?>
 <header class="page-header">
-    <div>
+    <div class="page-header-title">
         <h1>Quản lý email</h1>
         <p>Theo dõi, tạo mới và xử lý email trong hệ thống KaiMail.</p>
     </div>
     <div class="page-actions">
-        <button id="fastCheckerBtn" class="btn" style="background: #0f172a; color: white;" type="button"
-            data-modal-open="checkerModal">
+        <button id="fastCheckerBtn" class="btn btn-dark" type="button" data-modal-open="checkerModal">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
@@ -52,11 +54,11 @@ AdminLayout::begin('Quản lý email', 'emails', (string) ($admin['username'] ??
     </div>
 </header>
 
-<section class="stats-grid">
-    <article class="stat-card">
+<section class="stats-grid-5">
+    <article class="stat-card stat-total">
         <div class="stat-icon">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1-0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
                 <polyline points="22,6 12,13 2,6"></polyline>
             </svg>
         </div>
@@ -66,26 +68,49 @@ AdminLayout::begin('Quản lý email', 'emails', (string) ($admin['username'] ??
         </div>
     </article>
 
-    <article class="stat-card">
+    <article class="stat-card stat-admin">
         <div class="stat-icon">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="9 11 12 14 22 4"></polyline>
-                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
             </svg>
         </div>
         <div class="stat-info">
-            <span class="stat-value" id="statActiveEmails">0</span>
-            <span class="stat-label">Email hoạt động</span>
+            <span class="stat-value" id="statAdminEmails">0</span>
+            <span class="stat-label">Email Admin tạo</span>
         </div>
     </article>
 
-    <article class="stat-card">
+    <article class="stat-card stat-api">
+        <div class="stat-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+            </svg>
+        </div>
+        <div class="stat-info">
+            <span class="stat-value" id="statApiEmails">0</span>
+            <span class="stat-label">Hệ thống / API tạo</span>
+        </div>
+    </article>
+
+    <article class="stat-card stat-user">
+        <div class="stat-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+        </div>
+        <div class="stat-info">
+            <span class="stat-value" id="statUserEmails">0</span>
+            <span class="stat-label">Khách tự tạo</span>
+        </div>
+    </article>
+
+    <article class="stat-card stat-messages">
         <div class="stat-icon">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline>
-                <path
-                    d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z">
-                </path>
+                <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>
             </svg>
         </div>
         <div class="stat-info">
@@ -93,8 +118,43 @@ AdminLayout::begin('Quản lý email', 'emails', (string) ($admin['username'] ??
             <span class="stat-label">Tổng tin nhắn</span>
         </div>
     </article>
-
 </section>
+
+<!-- Source Filter Tabs: Phân biệt Admin vs API vs Khách -->
+<div class="source-tabs-bar" role="tablist" aria-label="Phân loại nguồn email">
+    <button type="button" class="source-tab active" data-source="all" role="tab" aria-selected="true">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"></path>
+        </svg>
+        <span>Tất cả email</span>
+        <span class="tab-badge" id="tabCountAll">0</span>
+    </button>
+    <button type="button" class="source-tab tab-admin" data-source="admin" role="tab" aria-selected="false">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        </svg>
+        <span>Admin Mail</span>
+        <span class="tab-badge admin-badge-count" id="tabCountAdmin">0</span>
+    </button>
+    <button type="button" class="source-tab tab-api" data-source="api" role="tab" aria-selected="false">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+        </svg>
+        <span>API</span>
+        <span class="tab-badge api-badge-count" id="tabCountApi">0</span>
+    </button>
+    <button type="button" class="source-tab" data-source="user" role="tab" aria-selected="false">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span>Khách tạo</span>
+        <span class="tab-badge" id="tabCountUser">0</span>
+    </button>
+</div>
 
 <section class="filters">
     <div class="search-box">
@@ -102,15 +162,11 @@ AdminLayout::begin('Quản lý email', 'emails', (string) ($admin['username'] ??
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <input type="text" id="searchInput" placeholder="Tìm email...">
+        <input type="text" id="searchInput" placeholder="Tìm theo email hoặc ghi chú...">
     </div>
 
     <div class="filter-group">
-        <select id="statusFilter" class="select-filter">
-            <option value="all">Tất cả trạng thái</option>
-        </select>
-
-        <select id="domainFilter" class="select-filter">
+        <select id="domainFilter" class="select-filter" title="Lọc theo tên miền">
             <option value="">Tất cả tên miền</option>
             <?php foreach ($domains as $domain): ?>
                 <option value="<?= htmlspecialchars((string) $domain, ENT_QUOTES, 'UTF-8') ?>">
@@ -119,33 +175,51 @@ AdminLayout::begin('Quản lý email', 'emails', (string) ($admin['username'] ??
             <?php endforeach; ?>
         </select>
 
-        <select id="expiryFilter" class="select-filter">
-            <option value="">Tất cả tiêu chí</option>
-            <option value="no_message">Không có tin nhắn</option>
+        <select id="expiryFilter" class="select-filter" title="Lọc theo tin nhắn">
+            <option value="">Tất cả tin nhắn</option>
+            <option value="no_message">Chưa có tin nhắn</option>
         </select>
     </div>
 
-    <button id="deleteSelectedBtn" class="btn danger hidden" type="button">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-        </svg>
-        <span>Xóa đã chọn</span>
-    </button>
+    <div class="bulk-actions-wrapper">
+        <button id="deleteSelectedBtn" class="btn danger btn-sm hidden" type="button" title="Xóa các email đã chọn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            <span>Xóa (<span id="selectedDeleteCount">0</span>)</span>
+        </button>
+
+        <button id="copySelectedBtn" class="btn secondary btn-sm hidden" type="button" title="Sao chép danh sách email đã chọn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span>Copy</span>
+        </button>
+    </div>
 </section>
 
 <section class="table-container">
     <table class="data-table">
+        <colgroup>
+            <col style="width: 48px;">
+            <col style="width: 38%;">
+            <col style="width: 26%;">
+            <col style="width: 11%;">
+            <col style="width: 14%;">
+            <col style="width: 11%;">
+        </colgroup>
         <thead>
             <tr>
                 <th class="col-check">
-                    <input type="checkbox" id="selectAll">
+                    <input type="checkbox" id="selectAll" title="Chọn tất cả">
                 </th>
-                <th>Email</th>
-                <th>Done</th>
-                <th>Tin nhắn</th>
-                <th>Tạo lúc</th>
-                <th class="col-actions">Thao tác</th>
+                <th class="col-email">Email & Nguồn</th>
+                <th class="col-note">Ghi chú (Note)</th>
+                <th class="col-messages" style="text-align: center;">Tin nhắn</th>
+                <th class="col-date" style="text-align: center;">Tạo lúc</th>
+                <th class="col-actions" style="text-align: center;">Thao tác</th>
             </tr>
         </thead>
         <tbody id="emailsTableBody"></tbody>
@@ -215,6 +289,11 @@ AdminLayout::begin('Quản lý email', 'emails', (string) ($admin['username'] ??
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="createEmailNote">Ghi chú (Tùy chọn)</label>
+                    <input type="text" id="createEmailNote" placeholder="VD: Acc Facebook 1, Verify TikTok, Nick chính...">
                 </div>
 
                 <div class="form-actions">
@@ -375,250 +454,41 @@ AdminLayout::begin('Quản lý email', 'emails', (string) ($admin['username'] ??
     </div>
 </div>
 
-<style>
-    .checker-form-fancy {
-        display: flex;
-        gap: 12px;
-        align-items: flex-end;
-        margin-bottom: 24px;
-        background: #f8fafc;
-        padding: 16px;
-        border-radius: 12px;
-        border: 1px solid #e2e8f0;
-        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
-    }
+<div id="noteModal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content modal-sm">
+        <div class="modal-header">
+            <h2>Ghi chú email</h2>
+            <button class="btn-close" type="button" data-modal-close="noteModal">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="updateNoteForm">
+                <input type="hidden" id="noteEmailId" value="">
+                <div class="target-email-chip">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1-0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                    <span id="noteEmailTarget"></span>
+                </div>
+                <div class="form-group" style="margin-top: 14px;">
+                    <label for="noteInputText">Nội dung ghi chú</label>
+                    <textarea id="noteInputText" rows="3" class="form-control" placeholder="Nhập ghi chú cho email này (VD: Acc clone 01, Đã verify...)" maxlength="255"></textarea>
+                    <p class="field-note">Ghi chú hỗ trợ bạn tìm kiếm và nhận diện tài khoản nhanh chóng.</p>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn secondary" data-modal-close="noteModal">Hủy</button>
+                    <button type="submit" class="btn primary">Lưu ghi chú</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
-    .checker-input-group {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .checker-input-group.days-group {
-        flex: 0 0 140px;
-    }
-
-    .checker-input-group label {
-        font-size: 0.8rem;
-        font-weight: 700;
-        color: #475569;
-        text-transform: uppercase;
-        letter-spacing: 0.025em;
-        margin-left: 2px;
-    }
-
-    .checker-input-wrapper {
-        position: relative;
-        display: flex;
-        align-items: center;
-    }
-
-    .checker-input-wrapper .checker-icon {
-        position: absolute;
-        left: 12px;
-        color: #94a3b8;
-        pointer-events: none;
-        transition: color 0.2s ease;
-    }
-
-    .checker-input-wrapper input {
-        width: 100%;
-        height: 44px;
-        padding: 8px 12px 8px 38px !important;
-        border: 1.5px solid #e2e8f0 !important;
-        border-radius: 10px !important;
-        font-size: 0.95rem !important;
-        background: white !important;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        color: #1e293b !important;
-        min-height: auto !important;
-    }
-
-    .checker-input-wrapper input:focus {
-        border-color: #0f172a !important;
-        box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.08) !important;
-        outline: none !important;
-    }
-
-    .checker-input-wrapper input:focus+.checker-icon,
-    .checker-input-wrapper:focus-within .checker-icon {
-        color: #0f172a;
-    }
-
-    .checker-btn-submit {
-        height: 44px;
-        padding: 0 24px;
-        background: #0f172a;
-        color: white;
-        border: none;
-        border-radius: 10px;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        cursor: pointer;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        font-size: 0.95rem;
-        box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -1px rgba(15, 23, 42, 0.06);
-    }
-
-    .checker-btn-submit:hover {
-        background: #1e293b;
-        transform: translateY(-1px);
-        box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.15), 0 4px 6px -2px rgba(15, 23, 42, 0.1);
-    }
-
-    .checker-btn-submit:active {
-        transform: translateY(0);
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    }
-
-    .checker-btn-submit:disabled {
-        opacity: 0.7;
-        cursor: not-allowed;
-        transform: none !important;
-    }
-
-    .checker-results-container {
-        min-height: 200px;
-        max-height: 450px;
-        overflow-y: auto;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        background: #fafafa;
-        padding: 16px;
-        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
-    }
-
-    .checker-results-header {
-        margin-bottom: 1.25rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 2px solid #f1f5f9;
-        padding-bottom: 0.75rem;
-    }
-
-    .results-count {
-        font-weight: 800;
-        color: #0f172a;
-        font-size: 0.95rem;
-        text-transform: uppercase;
-        letter-spacing: 0.025em;
-    }
-
-    .execution-time {
-        font-size: 0.75rem;
-        color: #ffffff;
-        background: #0f172a;
-        padding: 4px 14px;
-        border-radius: 999px;
-        font-weight: 700;
-        box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.2);
-    }
-
-    .checker-result-item {
-        background: white;
-        border: 1px solid #e2e8f0;
-        border-radius: 10px;
-        overflow: hidden;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        margin-bottom: 10px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    }
-
-    .checker-result-item.active {
-        border-color: #0f172a !important;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
-        transform: scale(1.005);
-    }
-
-    .checker-result-item.active .checker-detail {
-        max-height: 1200px !important;
-        border-top: 1px solid #f1f5f9 !important;
-    }
-
-    .checker-result-item.active .chevron {
-        transform: rotate(180deg);
-        stroke: #0f172a !important;
-    }
-
-    .checker-header-inner,
-    .checker-result-header-inner {
-        padding: 0.85rem 1rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        cursor: pointer;
-        user-select: none;
-    }
-
-    .checker-result-info {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .checker-result-email {
-        font-weight: 800;
-        color: #1e293b;
-        margin-bottom: 0.25rem;
-        font-size: 0.95rem;
-        font-family: inherit;
-    }
-
-    .checker-result-subject {
-        font-size: 0.85rem;
-        color: #64748b;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        font-weight: 500;
-    }
-
-    .checker-result-meta {
-        text-align: right;
-        margin-left: 1.5rem;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .checker-result-time {
-        font-size: 0.8rem;
-        color: #94a3b8;
-        white-space: nowrap;
-        font-weight: 500;
-    }
-
-    .checker-detail {
-        max-height: 0;
-        overflow: hidden;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        background: #f8fafc;
-        border-top: 0px solid #e2e8f0;
-    }
-
-    .checker-result-item:hover:not(.active) {
-        border-color: #cbd5e1;
-        background: #fdfdfd;
-        transform: translateY(-1px);
-    }
-
-    .spinner-sm {
-        width: 18px;
-        height: 18px;
-        border: 2.5px solid rgba(255, 255, 255, .2);
-        border-radius: 50%;
-        border-top-color: #fff;
-        animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
-    }
-</style>
 <?php
 AdminLayout::end(['/js/admin-dashboard.js']);

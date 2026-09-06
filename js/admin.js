@@ -501,9 +501,15 @@ class AdminCore {
             submitBtn.disabled = true;
             submitBtn.textContent = "Đang tạo...";
 
+            const noteInput = document.getElementById("createEmailNote");
+            const note = String(noteInput?.value || "").trim();
+
             const payload = { name_type: nameType, domain: selectedDomain, quantity: quantity };
             if (nameType === "custom") {
                 payload.email = customEmail;
+            }
+            if (note) {
+                payload.note = note;
             }
 
             try {

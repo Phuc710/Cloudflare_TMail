@@ -5,9 +5,9 @@
 -- Created: 2026-03-03
 -- Version: 1.0
 
--- DROP DATABASE IF EXISTS kaimail;
-CREATE DATABASE IF NOT EXISTS kaimail CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE kaimail;
+-- DROP DATABASE IF EXISTS kaishopi_kaimail;
+CREATE DATABASE IF NOT EXISTS `kaishopi_kaimail` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `kaishopi_kaimail`;
 
 -- ============================================
 -- TABLE: domains
@@ -32,10 +32,13 @@ CREATE TABLE IF NOT EXISTS emails (
     email VARCHAR(255) NOT NULL UNIQUE,
     name_type ENUM('vn', 'en', 'custom') DEFAULT 'en',
     is_done TINYINT(1) DEFAULT 0,
+    created_by VARCHAR(20) DEFAULT 'user',
+    note VARCHAR(500) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (domain_id) REFERENCES domains(id) ON DELETE CASCADE,
     INDEX idx_email (email),
-    INDEX idx_domain_id (domain_id)
+    INDEX idx_domain_id (domain_id),
+    INDEX idx_created_by (created_by)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
@@ -48,6 +51,7 @@ CREATE TABLE IF NOT EXISTS messages (
     from_email VARCHAR(255) NOT NULL,
     from_name VARCHAR(255) DEFAULT '',
     subject VARCHAR(500) DEFAULT '(No subject)',
+    snippet VARCHAR(255) DEFAULT '',
     body_text LONGTEXT,
     body_html LONGTEXT,
     message_id VARCHAR(255),
@@ -61,6 +65,12 @@ CREATE TABLE IF NOT EXISTS messages (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 ALTER TABLE messages ADD FULLTEXT INDEX idx_content_search (subject, body_text);
+
+-- TTL / Auto-clean event (optional, for production MySQL event scheduler)
+-- CREATE EVENT IF NOT EXISTS evt_purge_old_temp_mail
+-- ON SCHEDULE EVERY 1 HOUR
+-- DO
+--   DELETE FROM messages WHERE received_at < NOW() - INTERVAL 48 HOUR;
 
 -- ============================================
 -- TABLE: settings
@@ -82,7 +92,6 @@ CREATE TABLE IF NOT EXISTS settings (
 -- Default Domains
 INSERT IGNORE INTO domains (domain, is_active) VALUES 
 ('kaishop.id.vn', 1),
-('trongnghia.store', 1);
 
 -- System Settings
 INSERT IGNORE INTO settings (setting_key, setting_value) VALUES 

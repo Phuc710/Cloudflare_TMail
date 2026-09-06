@@ -31,7 +31,7 @@ class Auth
      */
     public static function startSession(): void
     {
-        if (session_status() === PHP_SESSION_NONE) {
+        if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
             $secure = SESSION_COOKIE_SECURE && self::isHttps();
 
             ini_set('session.use_strict_mode', '1');

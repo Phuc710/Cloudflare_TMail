@@ -82,25 +82,6 @@ HTML;
 
     private function buildVersionedAssetUrl(string $assetPath): string
     {
-        $assetPath = trim($assetPath);
-        if ($assetPath === '') {
-            return rtrim($this->baseUrl, '/');
-        }
-
-        if (str_starts_with($assetPath, 'http://') || str_starts_with($assetPath, 'https://')) {
-            return $assetPath;
-        }
-
-        $normalized = str_starts_with($assetPath, '/') ? $assetPath : '/' . $assetPath;
-        $rootDir = dirname(__DIR__);
-        $localPath = $rootDir . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($normalized, '/'));
-        $url = rtrim($this->baseUrl, '/') . $normalized;
-
-        if (is_file($localPath)) {
-            $version = (string) (filemtime($localPath) ?: time());
-            return $url . '?v=' . rawurlencode($version);
-        }
-
-        return $url;
+        return \KaiMail\Core\Services\AssetService::url($assetPath);
     }
 }

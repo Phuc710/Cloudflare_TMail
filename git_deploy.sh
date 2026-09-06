@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 
 # ==============================================================================
 #  GIT AUTO-DEPLOY SCRIPT (CRON JOB)
@@ -34,6 +34,12 @@ mkdir -p "$(dirname "$LOG_FILE")"
     
     if [ $EXIT_CODE -eq 0 ]; then
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Success: Code updated."
+        
+        # Build production assets if build script is present
+        if [ -f "$PROJECT_DIR/scripts/build.php" ]; then
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Recompiling production assets..."
+            php "$PROJECT_DIR/scripts/build.php" 2>&1
+        fi
     else
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Error: Git pull failed with exit code $EXIT_CODE."
     fi
