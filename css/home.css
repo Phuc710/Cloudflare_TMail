@@ -75,6 +75,9 @@ body.user-page-body {
 .user-page-container {
     width: 100%;
     margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Sticky modern topbar with blur */
@@ -165,45 +168,21 @@ body.user-page-body {
     color: currentColor;
 }
 
-.ecosystem-links {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+.topbar-spacer {
+    width: 145px;
+    display: none;
 }
 
-.eco-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
-    background: #ffffff;
-    color: #475569;
-    font-size: 13px;
-    font-weight: 500;
-    text-decoration: none;
-    transition: all 0.15s ease;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-}
-
-.eco-link:hover {
-    background: #f8fafc;
-    border-color: #cbd5e1;
-    color: #0f172a;
-}
-
-.eco-link svg {
-    color: #64748b;
-    transition: color 0.15s ease;
-}
-
-.eco-link:hover svg {
-    color: var(--km-accent);
+@media (min-width: 768px) {
+    .topbar-spacer {
+        display: block;
+        flex-shrink: 0;
+    }
 }
 
 /* Focused, clean main shell with fluid adaptive expansion */
 .user-main {
+    flex: 1 0 auto;
     width: 100%;
     max-width: 860px;
     margin: 0 auto;
@@ -1510,5 +1489,121 @@ body.swal2-toast-shown .swal2-container.swal2-top-right,
 
     .divider-pill {
         width: 6px;
+    }
+}
+
+/* ==========================================================================
+   Modern Minimalist Footer
+   ========================================================================== */
+.user-page-footer {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    border-top: 1px solid rgba(226, 232, 240, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 18px clamp(16px, 3.2vw, 48px);
+    margin-top: auto;
+}
+
+.footer-container {
+    max-width: 1140px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.footer-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.footer-name {
+    font-weight: 600;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+}
+
+.footer-dot {
+    color: #cbd5e1;
+    font-size: 12px;
+}
+
+.footer-tagline {
+    color: #64748b;
+    font-size: 12.5px;
+}
+
+.footer-ecosystem {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.footer-eco-title {
+    font-weight: 500;
+    color: #94a3b8;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.footer-eco-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #475569;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 12.5px;
+    padding: 5px 10px;
+    border-radius: 7px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.footer-eco-link:hover {
+    color: #0f172a;
+    background: #ffffff;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04);
+}
+
+.footer-eco-link svg {
+    color: #64748b;
+    transition: color 0.18s ease;
+}
+
+.footer-eco-link:hover svg {
+    color: var(--km-accent, #3b82f6);
+}
+
+.footer-eco-tg:hover svg {
+    color: #229ED9;
+}
+
+@media (max-width: 640px) {
+    .footer-container {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 12px;
+    }
+
+    .footer-brand {
+        justify-content: center;
+    }
+
+    .footer-ecosystem {
+        justify-content: center;
     }
 }

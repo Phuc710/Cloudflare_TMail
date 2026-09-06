@@ -218,23 +218,7 @@ $structuredData = [
                 </button>
             </div>
 
-            <nav class="ecosystem-links" aria-label="Liên kết hệ sinh thái KaiHub">
-                <a href="https://kaishop.id.vn" target="_blank" rel="noopener noreferrer" class="eco-link">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="2" y1="12" x2="22" y2="12" />
-                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                    </svg>
-                    <span>kaishop.id.vn</span>
-                </a>
-                <a href="https://t.me/KaiHub_bot" target="_blank" rel="noopener noreferrer" class="eco-link">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="22" y1="2" x2="11" y2="13" />
-                        <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                    </svg>
-                    <span>@KaiHub_bot</span>
-                </a>
-            </nav>
+            <div class="topbar-spacer" aria-hidden="true"></div>
         </header>
 
         <main class="user-main">
@@ -465,6 +449,35 @@ $structuredData = [
                 </section>
             </div>
         </main>
+
+        <footer class="user-page-footer">
+            <div class="footer-container">
+                <div class="footer-brand">
+                    <span class="footer-name">KaiMail</span>
+                    <span class="footer-dot">•</span>
+                    <span class="footer-tagline">Dịch vụ Temp Mail &amp; Trình xác thực 2FA miễn phí</span>
+                </div>
+                <div class="footer-ecosystem">
+                    <span class="footer-eco-title">Hệ sinh thái:</span>
+                    <a href="https://kaishop.id.vn" target="_blank" rel="noopener noreferrer" class="footer-eco-link" title="Cửa hàng dịch vụ kaishop.id.vn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="2" y1="12" x2="22" y2="12" />
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                        </svg>
+                        <span>kaishop.id.vn</span>
+                    </a>
+                    <span class="footer-dot">•</span>
+                    <a href="https://t.me/KaiHub_bot" target="_blank" rel="noopener noreferrer" class="footer-eco-link footer-eco-tg" title="Telegram Bot tự động @KaiHub_bot">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13" />
+                            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                        </svg>
+                        <span>@KaiHub_bot</span>
+                    </a>
+                </div>
+            </div>
+        </footer>
     </div>
 
     <script>
