@@ -35,24 +35,22 @@ if ($requestHost !== '') {
 
     // Keep links/API calls on the same host as the current request to avoid CORS/session issues.
     if ($configuredHost !== '' && $configuredHost !== $requestHostWithoutPort) {
-        if ($configuredPath === '' && in_array($requestHostWithoutPort, ['localhost', '127.0.0.1', '::1'], true)) {
-            $projectRoot = str_replace('\\', '/', dirname(__DIR__));
-            $scriptFilename = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_FILENAME'] ?? ''));
-            $scriptName = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+        $projectRoot = str_replace('\\', '/', dirname(__DIR__));
+        $scriptFilename = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_FILENAME'] ?? ''));
+        $scriptName = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
 
-            $relScript = substr($scriptFilename, strlen($projectRoot));
-            if ($relScript !== false && $relScript !== '' && str_ends_with($scriptName, $relScript)) {
-                $detectedPath = substr($scriptName, 0, -strlen($relScript));
+        $relScript = substr($scriptFilename, strlen($projectRoot));
+        if ($relScript !== false && $relScript !== '' && str_ends_with($scriptName, $relScript)) {
+            $detectedPath = substr($scriptName, 0, -strlen($relScript));
+        } else {
+            $docRoot = str_replace('\\', '/', (string) ($_SERVER['DOCUMENT_ROOT'] ?? ''));
+            if ($docRoot !== '' && stripos($projectRoot, $docRoot) === 0) {
+                $detectedPath = substr($projectRoot, strlen($docRoot));
             } else {
-                $docRoot = str_replace('\\', '/', (string) ($_SERVER['DOCUMENT_ROOT'] ?? ''));
-                if ($docRoot !== '' && stripos($projectRoot, $docRoot) === 0) {
-                    $detectedPath = substr($projectRoot, strlen($docRoot));
-                } else {
-                    $detectedPath = '';
-                }
+                $detectedPath = '';
             }
-            $configuredPath = ($detectedPath === '/' || $detectedPath === false) ? '' : rtrim($detectedPath, '/');
         }
+        $configuredPath = ($detectedPath === '/' || $detectedPath === false) ? '' : rtrim($detectedPath, '/');
         $configuredBaseUrl = $requestScheme . '://' . $requestHost . $configuredPath;
     }
 }

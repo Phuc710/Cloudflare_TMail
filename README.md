@@ -1,7 +1,7 @@
 # 📬 KaiMail — Nền Tảng Temporary Mail Chuẩn Enterprise
 
 <p align="center">
-  <img src="assets/logo.png" alt="KaiMail Logo" width="120" height="120" onerror="this.style.display='none'"/>
+  <img src="assets/logo.png" alt="KaiMail Logo" width="140" height="140" />
 </p>
 
 <p align="center">
@@ -69,40 +69,42 @@ Không sử dụng các framework cồng kềnh, toàn bộ phần lõi (Core) �
 
 ```mermaid
 flowchart TD
-    subgraph External["🌍 Bên Ngoài (Internet)"]
+    subgraph External["🌍 Bên Ngoài Internet"]
         Sender["📧 Người gửi thư ngoài"]
         Bot["🤖 Automation Bot / API Client"]
-        Browser["💻 Người dùng Web (UI)"]
+        Browser["💻 Người dùng Web UI"]
     end
 
-    subgraph Cloudflare["☁️ Hạ Tầng Cloudflare"]
-        CF_Routing["Cloudflare Email Routing (Catch-All)"]
-        CF_Worker["Cloudflare Worker (cloudflare-worker.js)"]
+    subgraph Cloudflare["☁️ Hạ Tầng Cloudflare Edge"]
+        CF_Routing["Cloudflare Email Routing"]
+        CF_Worker["Cloudflare Worker"]
     end
 
-    subgraph Server["🖥️ Máy Chủ Backend (PHP 8.2+)"]
-        Dispatcher["Thin Dispatchers (api/*.php / Router)"]
-        Kernel["Core App Kernel (App::run)"]
-        
-        subgraph Security["Tầng Bảo Mật & Xác Thực"]
-            Auth["Authenticator (HMAC / Session / Secret)"]
-            Gate["Gate (RBAC 5 Roles + ABAC)"]
-            RateLimit["RateLimiter & ReplayGuard"]
-        end
-        
-        subgraph Services["Tầng Nghiệp Vụ (Core Services)"]
-            EmailSvc["EmailService"]
-            MsgSvc["MessageService & Decoder"]
-            CheckerSvc["CheckerService"]
-            StatsSvc["StatsService"]
-        end
-        
-        DB[("🗄️ MySQL / MariaDB Database")]
+    subgraph Entry["🖥️ Điểm Tiếp Nhận Backend"]
+        Dispatcher["Thin Dispatchers api/*.php"]
+        Kernel["Core App Kernel App::run"]
+    end
+
+    subgraph Security["🛡️ Tầng Bảo Mật & Xác Thực"]
+        RateLimit["RateLimiter & ReplayGuard"]
+        Auth["Authenticator HMAC/Session"]
+        Gate["Gate RBAC 5 Roles + ABAC"]
+    end
+
+    subgraph Services["⚙️ Tầng Nghiệp Vụ Core Services"]
+        EmailSvc["EmailService"]
+        MsgSvc["MessageService & Decoder"]
+        CheckerSvc["CheckerService"]
+        StatsSvc["StatsService"]
+    end
+
+    subgraph Storage["🗄️ Cơ Sở Dữ Liệu"]
+        DB[("MySQL / MariaDB Database")]
     end
 
     Sender -->|SMTP| CF_Routing
     CF_Routing -->|Event| CF_Worker
-    CF_Worker -->|POST Webhook + X-Webhook-Secret| Dispatcher
+    CF_Worker -->|POST Webhook + Secret| Dispatcher
 
     Bot -->|REST API + HMAC Signature| Dispatcher
     Browser -->|HTTP Request / Long-Poll| Dispatcher
