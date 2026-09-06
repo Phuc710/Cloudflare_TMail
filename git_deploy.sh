@@ -31,6 +31,9 @@ run_deploy() {
     
     cd "$PROJECT_DIR" || { echo "ERROR: Could not change directory to $PROJECT_DIR"; exit 1; }
     
+    # Discard any local build artifact modifications so git pull never gets blocked
+    git checkout -- static/ 2>/dev/null
+    
     # Run git pull
     # We use --ff-only to ensure we don't accidentally create merge commits on server
     git pull origin "$BRANCH" --ff-only 2>&1
