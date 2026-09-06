@@ -15,7 +15,7 @@ $admin = ['username' => 'admin'];
 try {
     /** @var DomainService $domainService */
     $domainService = App::getService(DomainService::class);
-    $domains = array_column($domainService->getActiveDomains(), 'domain');
+    $domains = $domainService->listActiveNames();
 } catch (Throwable $e) {
     $domains = [];
     error_log('Admin index: load domains failed - ' . $e->getMessage());
