@@ -117,7 +117,7 @@ Nếu lập trình viên vô tình xóa thư mục `static/` hoặc chưa chạy
 
 ---
 
-## 5. Cấu Hình Máy Chủ Web (.htaccess) & Lý Do Cache 1 Năm
+## 5. Cấu Hình Máy Chủ Web (.htaccess)
 
 Tại tệp [.htaccess](../.htaccess), các quy tắc phân phối cache hiệu năng cao được thiết lập:
 
@@ -140,79 +140,36 @@ Tại tệp [.htaccess](../.htaccess), các quy tắc phân phối cache hiệu 
 </IfModule>
 ```
 
-### Tại Sao Lại Là 1 Năm (`max-age=31536000, immutable`)?
-
-Nhiều người e ngại: *"Set cache 1 năm lỡ sửa code thì khách hàng bị kẹt giao diện cũ 1 năm à?"*
-**Câu trả lời là KHÔNG BAO GIỜ!** Đây chính là sức mạnh tối thượng của kiến trúc **Content Hashing**:
-
-1. **Chuẩn RFC 8246 & Google Web Vitals**: Con số `31536000` giây (365 ngày) là mức tối đa tiêu chuẩn cho tài nguyên bất biến.
-2. **Cờ `immutable`**: Ra lệnh cho trình duyệt: *"File này không bao giờ bị thay đổi nội dung trong suốt vòng đời của nó. Đừng tốn công gửi request hỏi lại server (No 304 Revalidation) khi người dùng F5 hoặc chuyển trang."* Kết quả là tốc độ tải file đạt **0ms (from disk cache)**!
-3. **Cơ Chế Bẻ Cache Tức Thì (Instant Cache Invalidation)**:
-   - File CSS có tên: `home.cfd215a304.min.css`.
-   - Khi bạn sửa dù chỉ 1 dòng CSS, mã SHA-256 đổi thành `home.9a8b7c6d5e.min.css`.
-   - File HTML (`index.php`) **KHÔNG** bị cache bất biến. Khi người dùng mở trang, trình duyệt nhận HTML mới có chứa đường dẫn file mới.
-   - Vì đường dẫn file hoàn toàn mới, trình duyệt coi đây là một tài nguyên chưa từng thấy và lập tức tải ngay file mới về trong tích tắc!
-   - **Tóm lại**: File cũ vẫn nằm trong cache nhưng không ai gọi tới nó nữa. File mới được nạp tức thì trong 0 giây, không cần khách hàng phải bấm `Ctrl + Shift + R`.
-
 ---
 
-## 6. Quy Trình Triển Khai Trên Hosting (Deployment Workflow)
+## 6. Quy Trình Làm Việc & Triển Khai (Deployment Workflow)
 
-### Bước 1: Phát Triển & Đóng Gói Tại Local
+### Bước 1: Phát Triển Tại Local
+Lập trình viên chỉnh sửa giao diện và tính năng trong các tệp gốc:
+- `css/home.css`, `css/admin.css`
+- `js/app.js`, `js/admin.js`, `js/admin-dashboard.js`, v.v.
+
+### Bước 2: Đóng Gói Sản Phẩm
+Trước khi đẩy code lên Git:
 ```bash
-# 1. Sửa code trong css/ và js/
-# 2. Biên dịch nén và tạo hash
 npm run build
-# (Hoặc: php scripts/build.php)
+```
+*(Hoặc `php scripts/build.php` nếu dùng PHP).*
 
-# 3. Đẩy lên GitHub
+### Bước 3: Đẩy Code Lên GitHub
+```bash
 git add .
-git commit -m "feat: your updates"
+git commit -m "feat: your new feature"
 git push origin main
 ```
 
----
-
-### Bước 2: Triển Khai Lên Máy Chủ Hosting
-
-Bạn có hai cách triển khai trên hosting (chọn cách phù hợp):
-
-#### Cách A: Dùng Trực Tiếp Terminal Trên Hosting (Khuyên Dùng khi có SSH/Terminal)
-Nếu Hosting của bạn (cPanel / DirectAdmin) có hỗ trợ tính năng **Terminal** trong bảng điều khiển:
-
-1. Đăng nhập vào Control Panel của Hosting $\rightarrow$ Tìm và mở mục **Terminal** (hoặc SSH client như PuTTY, MobaXterm).
-2. Chuyển vào thư mục chứa mã nguồn website:
+### Bước 4: Tự Động Triển Khai Trên Máy Chủ (Auto-Deploy)
+Tệp cron job [git_deploy.sh](../git_deploy.sh) trên máy chủ hosting sẽ:
+1. Thực thi `git pull origin main --ff-only` để kéo các tệp code và thư mục `static/` mới nhất về.
+2. Tự động kiểm tra và thực thi lệnh biên dịch dự phòng:
    ```bash
-   cd ~/public_html
-   # Hoặc nếu là subdomain:
-   cd /home/kaishopi/domains/tmail.kaishop.id.vn/public_html
+   if [ -f "$PROJECT_DIR/scripts/build.php" ]; then
+       php "$PROJECT_DIR/scripts/build.php"
+   fi
    ```
-3. Chạy 1 lệnh duy nhất để tự động kéo code và biên dịch assets:
-   ```bash
-   bash git_deploy.sh
-   ```
-   *(Script sẽ tự động kéo `git pull`, sau đó gọi `php scripts/build.php` để đóng gói assets sạch sẽ và in log trực tiếp ra màn hình terminal).*
-
-4. **Hoặc chạy từng lệnh thủ công**:
-   ```bash
-   # Kéo code mới từ GitHub
-   git pull origin main
-
-   # Biên dịch assets bằng PHP thuần (không cần Node.js)
-   php scripts/build.php
-
-   # Kiểm tra bảng ánh xạ vừa tạo
-   cat static/manifest.json
-   ```
-
----
-
-#### Cách B: Tự Động Triển Khai Bằng Cron Job (Không cần gõ lệnh)
-Nếu bạn không muốn mỗi lần update phải mở terminal gõ lệnh:
-
-1. Vào mục **Cron Jobs** trên trang quản trị Hosting (như hiển thị trong menu cPanel).
-2. Thêm một Cron Job chạy định kỳ mỗi 2 đến 5 phút:
-   ```bash
-   /bin/bash /home/kaishopi/domains/tmail.kaishop.id.vn/public_html/git_deploy.sh
-   ```
-3. Mỗi khi bạn `git push` từ máy tính lên GitHub, trong vòng 2-5 phút máy chủ sẽ tự động `git pull` và chạy `php scripts/build.php`. Nhật ký triển khai được lưu lại tại `storage/logs/cron_deploy.log`.
+3. Website trên production cập nhật ngay lập tức sang phiên bản mã băm mới.
