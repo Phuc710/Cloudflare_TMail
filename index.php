@@ -461,7 +461,7 @@ $structuredData = [
                 </div>
                 <div class="footer-right">
                     <span class="footer-eco-label">Hệ sinh thái:</span>
-                    <a href="https://kaishop.id.vn/" target="_blank" rel="noopener noreferrer" class="footer-link">
+                    <a href="https://kaishop.id.vn/" target="_blank" rel="noopener noreferrer" class="footer-link footer-link-kai">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <circle cx="12" cy="12" r="10"></circle>
                             <line x1="2" y1="12" x2="22" y2="12"></line>

@@ -1562,43 +1562,67 @@ body.swal2-toast-shown .swal2-container.swal2-top-right,
 }
 
 .footer-eco-label {
-    font-weight: 500;
-    color: #94a3b8;
-    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    font-size: 12.5px;
 }
 
 .footer-link {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    color: #475569;
-    text-decoration: none;
-    font-weight: 500;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 7px;
+    font-weight: 600;
     font-size: 12.5px;
-    transition: color 0.15s ease;
+    text-decoration: none;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.footer-link:hover {
-    color: #0f172a;
-    text-decoration: underline;
-    text-underline-offset: 3px;
+.footer-link-kai {
+    color: #2563eb;
+    background: rgba(37, 99, 235, 0.07);
+    border: 1px solid rgba(37, 99, 235, 0.2);
 }
 
-.footer-link svg {
-    color: #64748b;
-    transition: color 0.15s ease;
+.footer-link-kai svg {
+    color: #2563eb;
+    transition: transform 0.2s ease;
 }
 
-.footer-link:hover svg {
-    color: #0f172a;
+.footer-link-kai:hover {
+    color: #1d4ed8;
+    background: rgba(37, 99, 235, 0.14);
+    border-color: rgba(37, 99, 235, 0.35);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(37, 99, 235, 0.12);
+}
+
+.footer-link-kai:hover svg {
+    transform: rotate(15deg);
+}
+
+.footer-link-tg {
+    color: #0284c7;
+    background: rgba(2, 132, 199, 0.08);
+    border: 1px solid rgba(2, 132, 199, 0.22);
+}
+
+.footer-link-tg svg {
+    color: #0088cc;
+    transition: transform 0.2s ease;
 }
 
 .footer-link-tg:hover {
-    color: #0088cc;
+    color: #0369a1;
+    background: rgba(2, 132, 199, 0.16);
+    border-color: rgba(2, 132, 199, 0.38);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(2, 132, 199, 0.14);
 }
 
 .footer-link-tg:hover svg {
-    color: #0088cc;
+    transform: translateX(1px) translateY(-1px);
 }
 
 .footer-dot-sep {
@@ -1611,7 +1635,7 @@ body.swal2-toast-shown .swal2-container.swal2-top-right,
         flex-direction: column;
         align-items: center;
         text-align: center;
-        gap: 10px;
+        gap: 12px;
     }
 
     .footer-left,
