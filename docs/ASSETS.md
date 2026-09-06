@@ -82,18 +82,6 @@ Tệp JSON này là "Single Source of Truth" để tầng Backend ánh xạ đư
   ```
 - **Tính năng**: Sử dụng 100% PHP thuần (hàm chuỗi, regex và `hash('sha256')`), không phụ thuộc vào bất kỳ thư viện bên ngoài nào (`vendor` hay `node_modules`).
 
-### 3.3. Database Migration: `scripts/migrate.php` (Đồng Bộ Cơ Sở Dữ Liệu)
-- **Mục đích**: Tự động kiểm tra và bù các bảng, cột, chỉ mục (indexes) bị thiếu trên Database Production.
-- **Cách chạy**:
-  ```bash
-  php scripts/migrate.php
-  ```
-- **Tính năng**:
-  - Tự động bổ sung cột `snippet` và backfill trích đoạn xem trước cho hàng trăm email cũ.
-  - Tự động bổ sung cột `created_by` + index `idx_created_by` (phục vụ lọc email Admin / Guest / API).
-  - Tự động bổ sung cột `note`, `is_done`, `name_type` và xác thực bảng `settings`.
-  - Hoàn toàn an toàn (idempotent), không bao giờ làm mất mát dữ liệu hiện có.
-
 ---
 
 ## 4. Cơ Chế Phục Vụ & Fallback An Toàn (AssetService)
@@ -201,11 +189,6 @@ Nếu Hosting của bạn (cPanel / DirectAdmin) có hỗ trợ tính năng **Te
    bash git_deploy.sh
    ```
    *(Script sẽ tự động kéo `git pull`, bảo toàn các file mangled xịn từ local, và in log trực tiếp ra màn hình terminal).*
-
-4. **Nếu có cập nhật Database**:
-   ```bash
-   php scripts/migrate.php
-   ```
 
 ---
 
