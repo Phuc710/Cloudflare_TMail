@@ -42,6 +42,12 @@ run_deploy() {
     if [ $EXIT_CODE -eq 0 ]; then
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Success: Code updated from branch $BRANCH."
         
+        # Run database migrations if migrate.php exists
+        if [ -f "$PROJECT_DIR/scripts/migrate.php" ]; then
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Running database migrations..."
+            php "$PROJECT_DIR/scripts/migrate.php" 2>&1
+        fi
+
         # If static assets were already compiled and committed from dev (Terser mangled), keep them.
         # Otherwise, fallback to pure PHP compiler if manifest is missing.
         if [ ! -f "$PROJECT_DIR/static/manifest.json" ] && [ -f "$PROJECT_DIR/scripts/build.php" ]; then
