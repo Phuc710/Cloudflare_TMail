@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS settings (
 
 -- Default Domains
 INSERT IGNORE INTO domains (domain, is_active) VALUES 
-('kaishop.id.vn', 1),
+('kaishop.id.vn', 1);
 
 -- System Settings
 INSERT IGNORE INTO settings (setting_key, setting_value) VALUES 
