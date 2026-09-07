@@ -649,7 +649,7 @@ class Program {
                     <div class="endpoint-card" id="endpoint-get-message">
                         <div class="endpoint-header">
                             <span class="endpoint-method get">GET</span>
-                            <span class="endpoint-path">/api/messages.php?id={id}</span>
+                            <span class="endpoint-path">/api/messages.php?id={id}&amp;email={email}</span>
                             <span class="endpoint-desc-brief">Xem toàn bộ nội dung HTML và Text của một tin nhắn</span>
                         </div>
                         <div class="endpoint-body">
@@ -673,6 +673,12 @@ class Program {
                                         <td><span class="param-type">integer</span></td>
                                         <td><span class="badge-required">Bắt buộc</span></td>
                                         <td>ID của tin nhắn (lấy từ API danh sách tin nhắn).</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">email</span></td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td><span class="badge-required">Bắt buộc</span></td>
+                                        <td>Địa chỉ email nhận thư (Bắt buộc để xác thực quyền truy cập nội dung, bảo mật dữ liệu).</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -772,6 +778,69 @@ class Program {
                                 <pre class="code-body">{
   "success": true,
   "message": "Đã xóa email thành công"
+}</pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Endpoint 6: Xóa Tin nhắn -->
+                    <div class="endpoint-card" id="endpoint-delete-message">
+                        <div class="endpoint-header">
+                            <span class="endpoint-method delete">DELETE</span>
+                            <span class="endpoint-path">/api/messages.php</span>
+                            <span class="endpoint-desc-brief">Xóa một hoặc nhiều tin nhắn thuộc hộp thư</span>
+                        </div>
+                        <div class="endpoint-body">
+                            <p style="font-size: 0.9rem; color: var(--docs-slate-600); margin-bottom: 14px;">
+                                Xóa các tin nhắn không cần thiết để giải phóng dung lượng hoặc dọn sạch lịch sử OTP.
+                            </p>
+
+                            <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--docs-slate-700); text-transform: uppercase;">Tham số Request (JSON Body hoặc Query)</h4>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Trường</th>
+                                        <th>Kiểu</th>
+                                        <th>Bắt buộc</th>
+                                        <th>Mô tả</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="param-name">email</span></td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td><span class="badge-required">Bắt buộc</span></td>
+                                        <td>Địa chỉ email sở hữu tin nhắn cần xóa.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">id</span></td>
+                                        <td><span class="param-type">integer</span></td>
+                                        <td><span class="badge-optional">Tùy chọn</span></td>
+                                        <td>ID của một tin nhắn duy nhất cần xóa.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">ids</span></td>
+                                        <td><span class="param-type">array</span></td>
+                                        <td><span class="badge-optional">Tùy chọn</span></td>
+                                        <td>Mảng danh sách các ID tin nhắn cần xóa (Ví dụ: <code>[9821, 9822]</code>).</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">delete_all</span></td>
+                                        <td><span class="param-type">boolean</span></td>
+                                        <td><span class="badge-optional">Tùy chọn</span></td>
+                                        <td>Truyền <code>true</code> nếu muốn xóa tất cả tin nhắn của email này.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--docs-slate-700); text-transform: uppercase;">Dữ liệu phản hồi mẫu (HTTP 200)</h4>
+                            <div class="code-container">
+                                <pre class="code-body">{
+  "success": true,
+  "data": {
+    "deleted": 1,
+    "email": "mybot@<?= htmlspecialchars($sampleDomain, ENT_QUOTES, 'UTF-8') ?>"
+  }
 }</pre>
                             </div>
                         </div>

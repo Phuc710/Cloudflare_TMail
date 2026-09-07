@@ -47,8 +47,8 @@ Options -Indexes
 </IfModule>
 
 # Public docs route
-RewriteRule ^docs/?$ user_docs/index.php [L]
-RewriteRule ^user_docs/?$ user_docs/index.php [L]
+RewriteRule ^docs/?$ docs/index.php [L]
+RewriteRule ^user_docs/?$ docs/ [R=301,L]
 
 # Admin routes - Clean URLs
 RewriteRule ^adminkaishop/login/?$ adminkaishop/login.php [L]
