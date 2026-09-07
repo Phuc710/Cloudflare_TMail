@@ -17,9 +17,13 @@ CREATE TABLE IF NOT EXISTS domains (
     id INT AUTO_INCREMENT PRIMARY KEY,
     domain VARCHAR(255) NOT NULL UNIQUE,
     is_active TINYINT(1) DEFAULT 1,
+    webhook_secret VARCHAR(64) NULL,
+    verify_token VARCHAR(64) NULL,
+    type ENUM('system', 'custom') DEFAULT 'system',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_domain (domain),
-    INDEX idx_active (is_active)
+    INDEX idx_active (is_active),
+    INDEX idx_type (type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================

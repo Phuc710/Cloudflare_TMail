@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../includes/Core/bootstrap.php';
 require_once __DIR__ . '/../includes/Core/App.php';
+require_once __DIR__ . '/../includes/UserLayout.php';
 
 use KaiMail\Core\App;
 use KaiMail\Core\Services\DomainService;
@@ -33,7 +34,7 @@ $docsCssUrl = asset_url('/css/docs.css');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tài liệu tích hợp API (Developer Portal) - KaiMail</title>
+    <title>Tài liệu tích hợp API - KaiMail</title>
     <meta name="description" content="Tài liệu hướng dẫn tích hợp API nhận email tạm thời thời gian thực (Temp Mail) của KaiMail dành cho lập trình viên, bot automation và hệ thống bên ngoài.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -46,48 +47,7 @@ $docsCssUrl = asset_url('/css/docs.css');
 <body class="user-page-body">
     <div class="user-page-container">
         <!-- Reusable Site Header -->
-        <header class="user-topbar">
-            <a href="<?= htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') ?>/" class="brand-block" aria-label="KaiMail - Temp Mail">
-                <div class="brand-logo-anim" aria-hidden="true">
-                    <lottie-player
-                        id="brandLottieLogo"
-                        src="<?= htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') ?>/assets/logo.json?v=<?= @filemtime(__DIR__ . '/../assets/logo.json') ?: time() ?>"
-                        background="transparent"
-                        speed="0.75"
-                        loop
-                        autoplay
-                    ></lottie-player>
-                </div>
-            </a>
-
-            <div class="app-mode-selector" role="tablist">
-                <a href="<?= htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') ?>/" class="mode-tab" role="tab" style="text-decoration: none;">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1-0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                        <polyline points="22,6 12,13 2,6" />
-                    </svg>
-                    <span>Temp Mail</span>
-                </a>
-                <a href="<?= htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') ?>/2fa" class="mode-tab" role="tab" style="text-decoration: none;">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                    <span>Trình xác thực 2FA</span>
-                </a>
-                <a href="<?= htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') ?>/docs" class="mode-tab active" role="tab" style="text-decoration: none;">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="16 18 22 12 16 6"></polyline>
-                        <polyline points="8 6 2 12 8 18"></polyline>
-                    </svg>
-                    <span>Tài liệu API</span>
-                </a>
-            </div>
-
-            <div class="topbar-clock" id="topbarClock" title="Giờ chuẩn Việt Nam (GMT+7)">
-                <span class="clock-time" id="clockTime">--:--:--</span>
-            </div>
-        </header>
+        <?php UserLayout::renderTopbar('docs', false); ?>
 
         <!-- Mobile TOC Sub-bar -->
         <div class="mobile-toc-bar">
@@ -155,8 +115,16 @@ $docsCssUrl = asset_url('/css/docs.css');
                 <!-- Hero Header -->
                 <header class="docs-hero" id="overview">
                     <div class="docs-hero-badge-row">
-                        <span class="docs-hero-badge">API v1.0 live</span>
-                        <span class="docs-hero-badge guest">Tích hợp BOT</span>
+                        <div class="hero-badges-left">
+                            <span class="docs-hero-badge">API v1.0 live</span>
+                            <span class="docs-hero-badge guest">Tích hợp BOT</span>
+                        </div>
+                        <a href="https://t.me/KaiHub_bot" target="_blank" rel="noopener noreferrer" class="btn-contact-telegram btn-hero-top">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+                            </svg>
+                            <span>Liên hệ Admin nhận API Token</span>
+                        </a>
                     </div>
                     <h1>Tài Liệu Tích Hợp KaiMail API</h1>
                     <p>
@@ -196,8 +164,11 @@ $docsCssUrl = asset_url('/css/docs.css');
                         </div>
                     </div>
 
-                    <div class="docs-callout">
-                        <strong>Chưa có Token?</strong> Vui lòng liên hệ Quản trị viên hệ thống qua Telegram <a href="https://t.me/KaiHub_bot" target="_blank" rel="noopener noreferrer">@KaiHub_bot</a> để được cấp Token và cấu hình hạn mức Rate Limit phù hợp với nhu cầu của bạn.
+                    <div class="docs-token-contact-card">
+                        <div class="contact-card-info">
+                            <h3 class="contact-card-title">Nhận API Token qua Telegram</h3>
+                            <p class="contact-card-desc">Liên hệ trực tiếp Quản trị viên hệ thống để nhận cặp khóa <code>Key ID</code> + <code>Secret Key</code> và cấu hình hạn mức Rate Limit phù hợp với nhu cầu của bạn.</p>
+                        </div>
                     </div>
                 </section>
 
@@ -943,46 +914,12 @@ class Program {
         </div>
 
         <!-- Reusable Site Footer -->
-        <footer class="user-page-footer">
-            <div class="footer-container">
-                <div class="footer-left">
-                    <span class="footer-brand-title">KaiMail</span>
-                    <span class="footer-sep" aria-hidden="true">•</span>
-                    <span class="footer-desc">Dịch vụ Temp Mail &amp; Trình xác thực 2FA miễn phí</span>
-                </div>
-                <div class="footer-right">
-                    <span class="footer-eco-label">Hệ sinh thái:</span>
-                    <a href="https://kaishop.id.vn/" target="_blank" rel="noopener noreferrer" class="footer-link footer-link-kai">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="2" y1="12" x2="22" y2="12"></line>
-                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"></path>
-                        </svg>
-                        <span>kaishop.id.vn</span>
-                    </a>
-                    <a href="https://t.me/KaiHub_bot" target="_blank" rel="noopener noreferrer" class="footer-link footer-link-tg">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.19-.08-.05-.19-.02-.27 0-.12.03-1.99 1.27-5.62 3.72-.53.36-1.01.54-1.44.53-.47-.01-1.38-.27-2.06-.49-.83-.27-1.49-.42-1.43-.88.03-.24.37-.49 1.02-.75 3.98-1.73 6.64-2.88 7.97-3.44 3.8-1.58 4.59-1.86 5.1-1.87.11 0 .37.03.53.17.14.12.18.28.2.45-.01.07.01.23 0 .32z" />
-                        </svg>
-                        <span>@KaiHub_bot</span>
-                    </a>
-                </div>
-            </div>
-        </footer>
+        <?php UserLayout::renderFooter(); ?>
     </div>
 
     <!-- Client-side Interactive Script -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Clock handler
-            function updateClock() {
-                const now = new Date();
-                const timeStr = now.toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour12: false });
-                const el = document.getElementById('clockTime');
-                if (el) el.textContent = timeStr;
-            }
-            setInterval(updateClock, 1000);
-            updateClock();
 
             // 1. Language Tabs Switcher
             const tabButtons = document.querySelectorAll('.lang-tab-btn');

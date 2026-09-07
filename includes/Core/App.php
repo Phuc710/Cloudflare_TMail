@@ -14,6 +14,7 @@ use KaiMail\Core\Http\Response;
 use KaiMail\Core\Services\EmailService;
 use KaiMail\Core\Services\MessageService;
 use KaiMail\Core\Services\DomainService;
+use KaiMail\Core\Services\CustomDomainService;
 use KaiMail\Core\Services\StatsService;
 use KaiMail\Core\Services\CheckerService;
 use KaiMail\Core\Services\TokenService;
@@ -65,6 +66,7 @@ final class App
             EmailService::class => new EmailService(self::$db),
             MessageService::class => new MessageService(self::$db),
             DomainService::class => new DomainService(self::$db),
+            CustomDomainService::class => new CustomDomainService(self::$db),
             StatsService::class => new StatsService(self::$db),
             CheckerService::class => new CheckerService(self::$db),
             TokenService::class => new TokenService(self::$db),
@@ -88,6 +90,10 @@ final class App
                 self::getService(EmailService::class)
             ),
             Controllers\DomainController::class => new Controllers\DomainController(
+                self::getService(DomainService::class)
+            ),
+            Controllers\CustomDomainController::class => new Controllers\CustomDomainController(
+                self::getService(CustomDomainService::class),
                 self::getService(DomainService::class)
             ),
             Controllers\StatsController::class => new Controllers\StatsController(

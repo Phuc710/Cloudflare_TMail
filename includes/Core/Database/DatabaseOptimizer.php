@@ -25,8 +25,9 @@ final class DatabaseOptimizer
 
         try {
             self::ensureApiTokensTable($db);
+            self::ensureDomainColumns($db);
         } catch (Throwable $e) {
-            error_log('DatabaseOptimizer api_tokens error: ' . $e->getMessage());
+            error_log('DatabaseOptimizer initialization error: ' . $e->getMessage());
         }
 
         if (is_file(self::MARKER_FILE)) {
@@ -39,6 +40,29 @@ final class DatabaseOptimizer
             self::writeMarker();
         } catch (Throwable $e) {
             error_log('DatabaseOptimizer error: ' . $e->getMessage());
+        }
+    }
+
+    public static function ensureDomainColumns(PDO $db): void
+    {
+        try {
+            $columns = [];
+            $stmt = $db->query("SHOW COLUMNS FROM `domains`");
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $columns[] = strtolower((string) ($row['Field'] ?? ''));
+            }
+
+            if (!in_array('webhook_secret', $columns, true)) {
+                $db->exec("ALTER TABLE `domains` ADD COLUMN `webhook_secret` VARCHAR(64) NULL AFTER `is_active`");
+            }
+            if (!in_array('verify_token', $columns, true)) {
+                $db->exec("ALTER TABLE `domains` ADD COLUMN `verify_token` VARCHAR(64) NULL AFTER `webhook_secret`");
+            }
+            if (!in_array('type', $columns, true)) {
+                $db->exec("ALTER TABLE `domains` ADD COLUMN `type` ENUM('system', 'custom') DEFAULT 'system' AFTER `verify_token`");
+            }
+        } catch (Throwable $e) {
+            error_log('ensureDomainColumns error: ' . $e->getMessage());
         }
     }
 

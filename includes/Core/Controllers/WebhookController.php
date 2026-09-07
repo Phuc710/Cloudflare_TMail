@@ -89,6 +89,17 @@ final class WebhookController
         }
         $cleanTo = strtolower(trim($cleanTo));
 
+        // Auto-activate custom domain if email reaches webhook
+        $toDomain = substr(strrchr($cleanTo, "@") ?: '', 1);
+        if ($toDomain !== '') {
+            try {
+                $db = \KaiMail\Core\App::getDb();
+                $db->prepare("UPDATE domains SET is_active = 1 WHERE domain = ? AND type = 'custom'")->execute([$toDomain]);
+            } catch (\Throwable $e) {
+                // Ignore
+            }
+        }
+
         $emailAccount = $this->emailService->findEmail($cleanTo);
         if (!$emailAccount) {
             self::log("Email not registered in DB: {$cleanTo}");

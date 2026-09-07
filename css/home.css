@@ -513,6 +513,18 @@ body.user-page-body {
     color: #3730a3;
 }
 
+.tmail-tool-btn.btn-add-domain {
+    color: #0284c7;
+    background: #f0f9ff;
+    border-color: #bae6fd;
+}
+
+.tmail-tool-btn.btn-add-domain:hover:not(:disabled):not(.is-disabled) {
+    background: #e0f2fe;
+    border-color: #7dd3fc;
+    color: #0369a1;
+}
+
 .tmail-tool-btn.btn-qr {
     color: #334155;
     background: #f8fafc;
@@ -1643,3 +1655,260 @@ body.swal2-toast-shown .swal2-container.swal2-top-right,
         justify-content: center;
     }
 }
+
+/* ==========================================================================
+   NATIVE MODALS (Zero SweetAlert2 Dependency)
+   ========================================================================== */
+.tmail-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    padding: 16px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.22s ease;
+}
+
+.tmail-modal-overlay.is-active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.tmail-modal-dialog {
+    background: #ffffff;
+    border-radius: 18px;
+    box-shadow: 0 20px 50px -10px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(226, 232, 240, 0.8);
+    width: 100%;
+    max-width: 580px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: scale(0.94) translateY(8px);
+    transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tmail-modal-dialog.modal-dialog-wide {
+    max-width: 660px;
+}
+
+.tmail-modal-overlay.is-active .tmail-modal-dialog {
+    transform: scale(1) translateY(0);
+}
+
+.tmail-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+    border-bottom: 1px solid #f1f5f9;
+    background: #ffffff;
+}
+
+.tmail-modal-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tmail-modal-close-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.tmail-modal-close-btn:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.tmail-modal-body {
+    padding: 20px 22px;
+    overflow-y: auto;
+    font-size: 13.5px;
+    color: #334155;
+    line-height: 1.6;
+}
+
+.tmail-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 22px;
+    background: #f8fafc;
+    border-top: 1px solid #f1f5f9;
+}
+
+/* Modal Buttons */
+.tmail-modal-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 9px 18px;
+    border-radius: 9px;
+    font-size: 13.5px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    text-decoration: none;
+}
+
+.tmail-modal-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.tmail-modal-btn-primary {
+    background: #0f172a;
+    color: #ffffff;
+}
+
+.tmail-modal-btn-primary:hover:not(:disabled) {
+    background: #1e293b;
+    transform: translateY(-1px);
+}
+
+.tmail-modal-btn-accent {
+    background: #0284c7;
+    color: #ffffff;
+}
+
+.tmail-modal-btn-accent:hover:not(:disabled) {
+    background: #0369a1;
+    transform: translateY(-1px);
+}
+
+.tmail-modal-btn-emerald {
+    background: #059669;
+    color: #ffffff;
+}
+
+.tmail-modal-btn-emerald:hover:not(:disabled) {
+    background: #047857;
+    transform: translateY(-1px);
+}
+
+.tmail-modal-btn-ghost {
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.tmail-modal-btn-ghost:hover:not(:disabled) {
+    background: #cbd5e1;
+    color: #0f172a;
+}
+
+/* Form Controls in Modal */
+.tmail-modal-form-group {
+    margin-bottom: 14px;
+}
+
+.tmail-modal-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 6px;
+}
+
+.tmail-modal-input {
+    width: 100%;
+    height: 44px;
+    padding: 0 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #0f172a;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    outline: none;
+    transition: border-color 0.18s ease;
+}
+
+.tmail-modal-input:focus {
+    border-color: #0284c7;
+}
+
+.tmail-modal-select {
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #0f172a;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.18s ease;
+}
+
+.tmail-modal-select:focus {
+    border-color: #0284c7;
+}
+
+.tmail-modal-alert {
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.tmail-modal-alert.alert-warning {
+    background: #fffbeb;
+    border: 1px solid #fef3c7;
+    color: #92400e;
+}
+
+.tmail-modal-alert.alert-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+
+.tmail-modal-alert.alert-success {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+}
+
+.tmail-modal-preview {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #64748b;
+    margin-top: 8px;
+}
+
+.tmail-modal-preview span {
+    color: #0f172a;
+    font-family: 'JetBrains Mono', monospace;
+}

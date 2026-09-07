@@ -197,7 +197,7 @@ Kiểm tra API: curl "<?= htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8') ?>/api
             </article>
 
             <article class="step-card" style="border-left: 4px solid var(--color-warning);">
-                <h3><span class="step-number" style="background: var(--color-warning); color: #fff;">!</span> Sử dụng domain từ tài khoản Cloudflare khác?</h3>
+                <h3><span class="step-number" style="background: var(--color-warning); color: #ff9500ff;">!</span> Sử dụng domain từ tài khoản Cloudflare khác?</h3>
                 <p>Cloudflare không cho phép chọn Worker giữa các tài khoản khác nhau. Cách xử lý:</p>
                 <ul style="padding-left: 20px; margin-top: 10px; color: var(--color-text-secondary); font-size: 0.9em; line-height: 1.6;">
                     <li><strong>Tại Tài khoản B:</strong> Tạo 1 Worker mới (ví dụ: <code>v-bridge</code>).</li>

@@ -45,7 +45,7 @@ final class Authenticator
             );
         }
 
-        // 3. Check Webhook Secret Header
+        // 3. Check Webhook Secret Header (Master Secret or Custom Domain Secret)
         $webhookSecret = $request->getHeader('X-Webhook-Secret');
         if ($webhookSecret !== '') {
             $configuredWebhook = defined('WEBHOOK_SECRET') ? (string) WEBHOOK_SECRET : (string) getenv('WEBHOOK_SECRET');
@@ -55,8 +55,27 @@ final class Authenticator
                     'cloudflare_worker',
                     'webhook_secret',
                     Permission::forRole(Role::WEBHOOK),
-                    ['ip' => $request->getClientIp()]
+                    ['ip' => $request->getClientIp(), 'type' => 'master']
                 );
+            }
+
+            // Check custom domain secret in DB
+            try {
+                $db = App::getDb();
+                $stmt = $db->prepare("SELECT id, domain FROM domains WHERE webhook_secret = ? LIMIT 1");
+                $stmt->execute([$webhookSecret]);
+                $matchedDomain = $stmt->fetch();
+                if ($matchedDomain) {
+                    return new AuthContext(
+                        Role::WEBHOOK,
+                        'custom_domain_worker:' . $matchedDomain['domain'],
+                        'custom_domain_secret',
+                        Permission::forRole(Role::WEBHOOK),
+                        ['ip' => $request->getClientIp(), 'domain' => $matchedDomain['domain'], 'domain_id' => (int) $matchedDomain['id']]
+                    );
+                }
+            } catch (\Throwable $e) {
+                // Ignore DB error
             }
         }
 
