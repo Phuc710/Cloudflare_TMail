@@ -45,6 +45,7 @@
     width: 100%;
     min-height: calc(100vh - 68px - 70px);
     flex: 1;
+    padding: 50px;
 }
 
 /* Sidebar */

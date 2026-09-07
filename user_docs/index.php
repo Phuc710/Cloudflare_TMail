@@ -155,7 +155,7 @@ $docsCssUrl = asset_url('/css/docs.css');
                 <!-- Hero Header -->
                 <header class="docs-hero" id="overview">
                     <div class="docs-hero-badge-row">
-                        <span class="docs-hero-badge">v1</span>
+                        <span class="docs-hero-badge">API v1.0 live</span>
                         <span class="docs-hero-badge guest">Tích hợp BOT</span>
                     </div>
                     <h1>Tài Liệu Tích Hợp KaiMail API</h1>
@@ -173,7 +173,7 @@ $docsCssUrl = asset_url('/css/docs.css');
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 2l-2 2m-1.5 1.5L14 9a5 5 0 1 0 3 3l3.5-3.5 2-2zM9 18a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"></path>
                         </svg>
-                        1. Cấp Phát & Nhận API Token
+                        1. Nhận API Token
                     </h2>
                     <p>
                         Để đảm bảo an toàn và phân quyền tốc độ gọi (Rate Limit), KaiMail áp dụng cơ chế xác thực đa người dùng (Multi-tenant API Token). Mỗi bot, phần mềm hoặc khách hàng sẽ được cấp một cặp khóa độc lập:
