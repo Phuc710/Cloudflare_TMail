@@ -20,11 +20,13 @@ final class DomainService
 
     public function listAll(bool $activeOnly = false): array
     {
-        $sql = "SELECT id, domain, is_active, created_at FROM domains";
-        if ($activeOnly) {
-            $sql .= " WHERE is_active = 1";
-        }
-        $sql .= " ORDER BY is_active DESC, domain ASC";
+        $where = $activeOnly ? " WHERE d.is_active = 1" : "";
+        $sql = "SELECT d.id, d.domain, d.is_active, d.created_at, COUNT(e.id) AS email_count
+                FROM domains d
+                LEFT JOIN emails e ON e.email LIKE CONCAT('%@', d.domain)
+                {$where}
+                GROUP BY d.id, d.domain, d.is_active, d.created_at
+                ORDER BY d.is_active DESC, d.domain ASC";
 
         return $this->db->query($sql)->fetchAll() ?: [];
     }
@@ -107,7 +109,7 @@ final class DomainService
         $count = (int) ($res['count'] ?? 0);
 
         if ($count > 0) {
-            throw ApiException::badRequest("Không thể xóa domain đang có {$count} email", ['email_count' => $count]);
+            throw ApiException::badRequest("Không thể xóa domain vì đang có {$count} email liên kết. Vui lòng xóa các email thuộc domain này trước.", ['email_count' => $count]);
         }
 
         $deleteStmt = $this->db->prepare("DELETE FROM domains WHERE id = ?");

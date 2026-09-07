@@ -16,8 +16,10 @@ try {
     /** @var DomainService $domainService */
     $domainService = App::getService(DomainService::class);
     $domains = $domainService->listActiveNames();
+    $allDomains = $domainService->listAll();
 } catch (Throwable $e) {
     $domains = [];
+    $allDomains = [];
     error_log('Admin index: load domains failed - ' . $e->getMessage());
 }
 
@@ -39,10 +41,10 @@ AdminLayout::begin('Quản lý email', 'emails', (string) ($admin['username'] ??
         <button id="addDomainBtn" class="btn secondary" type="button" data-modal-open="addDomainModal">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="16"></line>
-                <line x1="8" y1="12" x2="16" y2="12"></line>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"></path>
             </svg>
-            <span>Thêm domain</span>
+            <span>Quản lý domain</span>
         </button>
         <button id="createEmailBtn" class="btn primary" type="button" data-modal-open="createModal">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -342,9 +344,19 @@ AdminLayout::begin('Quản lý email', 'emails', (string) ($admin['username'] ??
 
 <div id="addDomainModal" class="modal hidden">
     <div class="modal-backdrop"></div>
-    <div class="modal-content modal-sm">
+    <div class="modal-content modal-md">
         <div class="modal-header">
-            <h2>Thêm domain mới</h2>
+            <div>
+                <h2 style="display: flex; align-items: center; gap: 8px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"></path>
+                    </svg>
+                    Quản lý & Thêm domain
+                </h2>
+                <p class="modal-subtitle">Bật / tắt trạng thái domain hoặc thêm domain mới vào hệ thống</p>
+            </div>
             <button class="btn-close" type="button" data-modal-close="addDomainModal">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -353,15 +365,83 @@ AdminLayout::begin('Quản lý email', 'emails', (string) ($admin['username'] ??
             </button>
         </div>
         <div class="modal-body">
-            <form id="addDomainForm">
+            <!-- Danh sách domain hiện có -->
+            <div class="domain-section">
+                <div class="domain-section-header">
+                    <span class="domain-section-title">Domain trong hệ thống</span>
+                    <span class="domain-count-pill" id="domainListCount"><?= count($allDomains) ?> domain</span>
+                </div>
+                <div id="domainItemsContainer" class="domain-items-container">
+                    <?php if (empty($allDomains)): ?>
+                        <div class="domain-empty-card" id="domainEmptyMsg">Chưa có domain nào trong hệ thống.</div>
+                    <?php else: ?>
+                        <?php foreach ($allDomains as $dom): ?>
+                            <?php 
+                                $domId = (int) $dom['id'];
+                                $domName = (string) $dom['domain'];
+                                $isActive = ((int) $dom['is_active']) === 1;
+                                $emailCount = (int) ($dom['email_count'] ?? 0);
+                            ?>
+                            <div class="domain-card <?= $isActive ? '' : 'is-inactive' ?>" id="domainCard_<?= $domId ?>" data-domain-id="<?= $domId ?>">
+                                <div class="domain-card-main">
+                                    <div class="domain-card-icon">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="domain-card-info">
+                                        <div class="domain-card-name"><?= htmlspecialchars($domName, ENT_QUOTES, 'UTF-8') ?></div>
+                                        <div class="domain-card-meta">
+                                            <span class="domain-email-count" id="domainEmailCount_<?= $domId ?>"><?= $emailCount ?> email</span>
+                                            <span class="domain-meta-sep">•</span>
+                                            <span class="domain-status-badge <?= $isActive ? 'active' : 'inactive' ?>" id="domainStatusBadge_<?= $domId ?>">
+                                                <?= $isActive ? 'Hoạt động' : 'Tạm tắt' ?>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="domain-card-actions">
+                                    <label class="ios-switch" title="<?= $isActive ? 'Bấm để tắt domain này' : 'Bấm để bật domain này' ?>">
+                                        <input type="checkbox" class="domain-toggle-switch" 
+                                            data-domain-id="<?= $domId ?>" 
+                                            data-domain-name="<?= htmlspecialchars($domName, ENT_QUOTES, 'UTF-8') ?>" 
+                                            <?= $isActive ? 'checked' : '' ?>>
+                                        <span class="ios-switch-slider"></span>
+                                    </label>
+                                    <button type="button" class="domain-delete-btn" 
+                                        data-domain-delete="<?= $domId ?>" 
+                                        data-domain-name="<?= htmlspecialchars($domName, ENT_QUOTES, 'UTF-8') ?>" 
+                                        data-email-count="<?= $emailCount ?>"
+                                        title="<?= $emailCount > 0 ? 'Không thể xóa khi còn email liên kết' : 'Xóa domain này' ?>">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Divider -->
+            <div class="domain-divider">
+                <span>Thêm domain mới</span>
+            </div>
+
+            <!-- Form thêm domain -->
+            <form id="addDomainForm" class="add-domain-form-card">
                 <div class="form-group">
                     <label for="domainName">Tên domain</label>
-                    <input type="text" id="domainName" placeholder="example.com" pattern="[a-z0-9\.\-]+" required>
+                    <input type="text" id="domainName" placeholder="VD: mail.example.com" pattern="[a-z0-9\.\-]+" required autocomplete="off">
                     <p class="field-note">Không nhập tiền tố `http://` hoặc `www`.</p>
                 </div>
 
                 <div class="form-group">
-                    <label>Trạng thái</label>
+                    <label>Trạng thái ban đầu</label>
                     <div class="radio-group">
                         <label class="radio-item">
                             <input type="radio" name="domain_status" value="1" checked>
@@ -375,16 +455,21 @@ AdminLayout::begin('Quản lý email', 'emails', (string) ($admin['username'] ??
                 </div>
 
                 <div class="hint-box">
-                    Cần cấu hình DNS/MX trước khi dùng domain nhận mail.
+                    Cần cấu hình DNS Cloudflare trước khi dùng domain nhận mail.
                     <a href="<?= htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8') ?>/adminkaishop/docs-domain"
                         style="text-decoration: underline;">
-                        Xem hướng dẫn
+                        Xem hướng dẫn cấu hình
                     </a>
                 </div>
 
-                <div class="form-actions">
-                    <button type="button" class="btn secondary" data-modal-close="addDomainModal">Hủy</button>
-                    <button type="submit" class="btn primary">Thêm domain</button>
+                <div class="form-actions" style="margin-top: 14px;">
+                    <button type="submit" class="btn primary" style="width: 100%;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        <span>Thêm domain</span>
+                    </button>
                 </div>
             </form>
         </div>

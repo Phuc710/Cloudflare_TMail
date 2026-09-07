@@ -20,7 +20,7 @@ class AdminCore {
         this.bindModalSystem();
         this.bindCreateEmailForm();
         this.bindAddDomainForm();
-        this.bindDomainDeleteButtons();
+        this.bindDomainManagement();
         this.bindMobileMenu();
     }
 
@@ -199,8 +199,13 @@ class AdminCore {
             "polling failed": "Không thể đồng bộ hộp thư",
             "database connection failed": "Không thể kết nối cơ sở dữ liệu",
             "invalid json": "Dữ liệu JSON không hợp lệ",
-            "missing required fields": "Thiếu trường dữ liệu bắt buộc",
-            "email_id required": "Thiếu email_id"
+            "email_id required": "Thiếu email_id",
+            badrequest: "Yêu cầu không hợp lệ",
+            "domain is required": "Tên domain là bắt buộc",
+            "invalid domain format": "Định dạng domain không hợp lệ",
+            "domain already exists": "Domain này đã tồn tại trong hệ thống",
+            "domain not found": "Không tìm thấy domain",
+            "cannot delete domain with associated emails": "Không thể xóa domain vì vẫn còn email liên kết"
         };
 
         return dictionary[lowered] || text;
@@ -570,7 +575,7 @@ class AdminCore {
             const isActive = Number(statusInput?.value || "1");
 
             if (!domainName) {
-                this.showToast("Vui lòng nhập domain", "error");
+                this.showToast("Vui lòng nhập tên domain", "error");
                 return;
             }
 
@@ -589,14 +594,16 @@ class AdminCore {
                 });
 
                 if (!ok) {
-                    this.showToast(data?.error || "Không thể thêm domain", "error");
+                    const errorMsg = data?.message || data?.error || "Không thể thêm domain";
+                    this.showToast(errorMsg, "error");
                     return;
                 }
 
-                this.showToast("Đã thêm domain thành công", "success");
-                this.closeModal("addDomainModal");
+                this.showToast(`Đã thêm domain "${domainName}" thành công`, "success");
                 form.reset();
-                setTimeout(() => window.location.reload(), 800);
+
+                // Cập nhật lại danh sách domain trong modal mượt mà
+                await this.refreshDomainList();
             } catch (error) {
                 this.showToast("Lỗi kết nối máy chủ", "error");
             } finally {
@@ -606,50 +613,372 @@ class AdminCore {
         });
     }
 
-    bindDomainDeleteButtons() {
-        document.querySelectorAll("[data-domain-delete]").forEach((btn) => {
-            btn.addEventListener("click", async () => {
-                const id = Number(btn.getAttribute("data-domain-delete") || "0");
-                const name = btn.getAttribute("data-domain-name") || "";
-                await this.deleteDomain(id, name);
-            });
+    bindDomainManagement() {
+        // Bật / tắt trạng thái hoạt động của domain qua Toggle Switch (hỗ trợ cả modal card và table row)
+        document.addEventListener("change", async (event) => {
+            const toggle = event.target.closest(".domain-toggle-switch");
+            if (!toggle) return;
+
+            const domainId = Number(toggle.dataset.domainId || "0");
+            const domainName = String(toggle.dataset.domainName || "");
+            const isChecked = toggle.checked;
+
+            if (!domainId) return;
+
+            toggle.disabled = true;
+
+            try {
+                const { ok, data } = await this.fetchJson("/api/admin/domains.php", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-HTTP-Method-Override": "PUT",
+                    },
+                    body: JSON.stringify({
+                        _method: "PUT",
+                        id: domainId,
+                        is_active: isChecked ? 1 : 0,
+                    }),
+                });
+
+                if (!ok) {
+                    toggle.checked = !isChecked; // Khôi phục trạng thái cũ
+                    const msg = data?.message || data?.error || "Không thể cập nhật trạng thái domain";
+                    this.showToast(msg, "error");
+                    return;
+                }
+
+                // Cập nhật card nếu có
+                const card = document.getElementById(`domainCard_${domainId}`);
+                if (card) {
+                    card.classList.toggle("is-inactive", !isChecked);
+                }
+
+                // Cập nhật table row nếu có
+                const row = document.getElementById(`domainRow_${domainId}`);
+                if (row) {
+                    row.classList.toggle("is-inactive-row", !isChecked);
+                }
+
+                // Cập nhật badge (hỗ trợ cả modal và table)
+                document.querySelectorAll(`[id^="domainStatusBadge_"][id$="_${domainId}"], #domainStatusBadge_${domainId}`).forEach((badge) => {
+                    badge.className = `domain-status-badge ${isChecked ? "active" : "inactive"}`;
+                    badge.textContent = isChecked ? "Hoạt động" : "Tạm tắt";
+                });
+
+                const label = toggle.closest(".ios-switch");
+                if (label) {
+                    label.title = isChecked ? "Bấm để tắt domain này" : "Bấm để bật domain này";
+                }
+
+                this.showToast(`Đã ${isChecked ? "bật hoạt động" : "tạm tắt"} domain "${domainName}"`, "success");
+
+                // Cập nhật các select domain trên trang
+                this.updatePageDomainOptions(domainName, isChecked);
+            } catch (error) {
+                toggle.checked = !isChecked;
+                this.showToast("Lỗi kết nối máy chủ", "error");
+            } finally {
+                toggle.disabled = false;
+            }
         });
-    }
 
-    async deleteDomain(id, name = "") {
-        if (!id) return;
+        // Xóa domain (hỗ trợ cả modal card và table row)
+        document.addEventListener("click", async (event) => {
+            const deleteBtn = event.target.closest(".domain-delete-btn, [data-domain-delete]");
+            if (!deleteBtn) return;
 
-        const confirmed = await this.confirmAction({
-            title: "Xác nhận xóa domain",
-            text: `Bạn có chắc muốn xóa domain "${name}"? Chỉ xóa được domain chưa có email.`,
-            confirmButtonText: "Xóa domain",
-            cancelButtonText: "Hủy",
-            icon: "warning",
-        });
-        if (!confirmed) return;
+            const id = Number(deleteBtn.dataset.domainDelete || "0");
+            const name = deleteBtn.dataset.domainName || "";
+            const emailCount = Number(deleteBtn.dataset.emailCount || "0");
 
-        try {
-            const { ok, data } = await this.fetchJson("/api/admin/domains.php", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-HTTP-Method-Override": "DELETE",
-                },
-                body: JSON.stringify({
-                    _method: "DELETE",
-                    id,
-                }),
-            });
+            if (!id) return;
 
-            if (!ok) {
-                this.showToast(data?.error || "Không thể xóa domain", "error");
+            if (emailCount > 0) {
+                this.showToast(`Không thể xóa domain "${name}" vì đang có ${emailCount} email liên kết. Vui lòng xóa email trước!`, "warning");
                 return;
             }
 
-            this.showToast("Đã xóa domain", "success");
-            setTimeout(() => window.location.reload(), 600);
-        } catch (error) {
-            this.showToast("Lỗi kết nối máy chủ", "error");
+            const confirmed = await this.confirmAction({
+                title: "Xác nhận xóa domain",
+                text: `Bạn có chắc muốn xóa vĩnh viễn domain "${name}" khỏi hệ thống?`,
+                confirmButtonText: "Xóa domain",
+                cancelButtonText: "Hủy",
+                icon: "warning",
+            });
+            if (!confirmed) return;
+
+            deleteBtn.disabled = true;
+
+            try {
+                const { ok, data } = await this.fetchJson("/api/admin/domains.php", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-HTTP-Method-Override": "DELETE",
+                    },
+                    body: JSON.stringify({
+                        _method: "DELETE",
+                        id,
+                    }),
+                });
+
+                if (!ok) {
+                    const msg = data?.message || data?.error || "Không thể xóa domain";
+                    this.showToast(msg, "error");
+                    deleteBtn.disabled = false;
+                    return;
+                }
+
+                this.showToast(`Đã xóa domain "${name}" thành công`, "success");
+
+                // Xóa thẻ / hàng khỏi giao diện
+                const targetElement = document.getElementById(`domainCard_${id}`)
+                    || document.getElementById(`domainRow_${id}`)
+                    || deleteBtn.closest("tr")
+                    || deleteBtn.closest(".domain-card");
+
+                if (targetElement) {
+                    targetElement.style.transition = "all 0.25s ease";
+                    targetElement.style.opacity = "0";
+                    targetElement.style.transform = "scale(0.95)";
+                    setTimeout(() => {
+                        targetElement.remove();
+                        this.updateDomainCountPill();
+                    }, 250);
+                }
+
+                this.removeDomainFromSelects(name);
+            } catch (error) {
+                this.showToast("Lỗi kết nối máy chủ", "error");
+                deleteBtn.disabled = false;
+            }
+        });
+    }
+
+    async refreshDomainList() {
+        const cardContainer = document.getElementById("domainItemsContainer");
+        const tableBody = document.getElementById("docsDomainTableBody");
+        if (!cardContainer && !tableBody) return;
+
+        try {
+            const { ok, data } = await this.fetchJson("/api/admin/domains.php");
+            if (!ok || !Array.isArray(data?.domains)) return;
+
+            const domains = data.domains;
+            if (cardContainer) {
+                this.renderDomainCards(domains);
+            }
+            if (tableBody) {
+                this.renderDomainTableRows(domains);
+            }
+            this.updateDomainCountPill(domains.length);
+
+            const activeDomains = domains.filter((d) => Number(d.is_active) === 1).map((d) => d.domain);
+            this.syncDomainSelects(activeDomains);
+        } catch (e) {
+            console.error("Refresh domain list error:", e);
+        }
+    }
+
+    renderDomainCards(domains) {
+        const container = document.getElementById("domainItemsContainer");
+        if (!container) return;
+
+        if (!domains || domains.length === 0) {
+            container.innerHTML = '<div class="domain-empty-card" id="domainEmptyMsg">Chưa có domain nào trong hệ thống.</div>';
+            return;
+        }
+
+        container.innerHTML = domains.map((dom) => {
+            const id = Number(dom.id);
+            const name = this.escapeHtml(dom.domain);
+            const isActive = Number(dom.is_active) === 1;
+            const emailCount = Number(dom.email_count || 0);
+
+            return `
+                <div class="domain-card ${isActive ? '' : 'is-inactive'}" id="domainCard_${id}" data-domain-id="${id}">
+                    <div class="domain-card-main">
+                        <div class="domain-card-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="2" y1="12" x2="22" y2="12"></line>
+                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"></path>
+                            </svg>
+                        </div>
+                        <div class="domain-card-info">
+                            <div class="domain-card-name">${name}</div>
+                            <div class="domain-card-meta">
+                                <span class="domain-email-count" id="domainEmailCount_${id}">${emailCount} email</span>
+                                <span class="domain-meta-sep">•</span>
+                                <span class="domain-status-badge ${isActive ? 'active' : 'inactive'}" id="domainStatusBadge_${id}">
+                                    ${isActive ? 'Hoạt động' : 'Tạm tắt'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="domain-card-actions">
+                        <label class="ios-switch" title="${isActive ? 'Bấm để tắt domain này' : 'Bấm để bật domain này'}">
+                            <input type="checkbox" class="domain-toggle-switch" 
+                                data-domain-id="${id}" 
+                                data-domain-name="${name}" 
+                                ${isActive ? 'checked' : ''}>
+                            <span class="ios-switch-slider"></span>
+                        </label>
+                        <button type="button" class="domain-delete-btn" 
+                            data-domain-delete="${id}" 
+                            data-domain-name="${name}" 
+                            data-email-count="${emailCount}"
+                            title="${emailCount > 0 ? `Không thể xóa: đang có ${emailCount} email liên kết` : 'Xóa domain này'}">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join("");
+    }
+
+    renderDomainTableRows(domains) {
+        const tbody = document.getElementById("docsDomainTableBody");
+        if (!tbody) return;
+
+        if (!domains || domains.length === 0) {
+            tbody.innerHTML = '<tr id="docsDomainEmptyRow"><td colspan="5" style="text-align: center; color: var(--slate-400); padding: 32px 16px;">Chưa có domain nào trong hệ thống.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = domains.map((dom) => {
+            const id = Number(dom.id);
+            const name = this.escapeHtml(dom.domain);
+            const isActive = Number(dom.is_active) === 1;
+            const emailCount = Number(dom.email_count || 0);
+            const createdAt = this.escapeHtml(dom.created_at || "");
+
+            return `
+                <tr id="domainRow_${id}" data-domain-id="${id}" class="${isActive ? '' : 'is-inactive-row'}">
+                    <td><strong class="domain-name-tag"><code>@${name}</code></strong></td>
+                    <td style="text-align: center;">
+                        <div class="domain-status-cell">
+                            <label class="ios-switch" title="${isActive ? 'Bấm để tắt domain này' : 'Bấm để bật domain này'}">
+                                <input type="checkbox" class="domain-toggle-switch"
+                                    data-domain-id="${id}"
+                                    data-domain-name="${name}"
+                                    ${isActive ? 'checked' : ''}>
+                                <span class="ios-switch-slider"></span>
+                            </label>
+                            <span class="domain-status-badge ${isActive ? 'active' : 'inactive'}" id="domainStatusBadge_table_${id}">
+                                ${isActive ? 'Hoạt động' : 'Tạm tắt'}
+                            </span>
+                        </div>
+                    </td>
+                    <td style="text-align: center;">
+                        <span class="domain-email-pill ${emailCount > 0 ? 'has-emails' : 'zero-emails'}">
+                            ${emailCount} email
+                        </span>
+                    </td>
+                    <td>${createdAt}</td>
+                    <td style="text-align: center;">
+                        <button type="button" class="btn danger btn-sm domain-delete-btn"
+                            data-domain-delete="${id}"
+                            data-domain-name="${name}"
+                            data-email-count="${emailCount}"
+                            title="${emailCount > 0 ? `Không thể xóa: đang có ${emailCount} email liên kết` : 'Xóa domain này'}">
+                            Xóa
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join("");
+    }
+
+    updateDomainCountPill(count) {
+        const modalPill = document.getElementById("domainListCount");
+        const docsPill = document.getElementById("docsDomainListCount");
+        const total = count !== undefined ? count : (
+            modalPill ? document.querySelectorAll("#domainItemsContainer .domain-card").length :
+            document.querySelectorAll("#docsDomainTableBody tr[data-domain-id]").length
+        );
+
+        if (modalPill) {
+            modalPill.textContent = `${total} domain`;
+        }
+        if (docsPill) {
+            docsPill.textContent = `${total} domain`;
+        }
+
+        const container = document.getElementById("domainItemsContainer");
+        if (total === 0 && container && !document.getElementById("domainEmptyMsg")) {
+            container.innerHTML = '<div class="domain-empty-card" id="domainEmptyMsg">Chưa có domain nào trong hệ thống.</div>';
+        }
+
+        const tableBody = document.getElementById("docsDomainTableBody");
+        if (total === 0 && tableBody && !document.getElementById("docsDomainEmptyRow")) {
+            tableBody.innerHTML = '<tr id="docsDomainEmptyRow"><td colspan="5" style="text-align: center; color: var(--slate-400); padding: 32px 16px;">Chưa có domain nào trong hệ thống.</td></tr>';
+        }
+    }
+
+    updatePageDomainOptions(domainName, isChecked) {
+        const domainSelect = document.getElementById("domainSelect");
+        if (!domainSelect) return;
+
+        if (isChecked) {
+            let exists = false;
+            for (const opt of domainSelect.options) {
+                if (opt.value === domainName) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) {
+                const newOpt = document.createElement("option");
+                newOpt.value = domainName;
+                newOpt.textContent = `@${domainName}`;
+                domainSelect.appendChild(newOpt);
+            }
+        } else {
+            for (let i = 0; i < domainSelect.options.length; i++) {
+                if (domainSelect.options[i].value === domainName) {
+                    domainSelect.remove(i);
+                    break;
+                }
+            }
+        }
+    }
+
+    removeDomainFromSelects(domainName) {
+        const domainSelect = document.getElementById("domainSelect");
+        if (domainSelect) {
+            for (let i = 0; i < domainSelect.options.length; i++) {
+                if (domainSelect.options[i].value === domainName) {
+                    domainSelect.remove(i);
+                    break;
+                }
+            }
+        }
+        const domainFilter = document.getElementById("domainFilter");
+        if (domainFilter) {
+            for (let i = 0; i < domainFilter.options.length; i++) {
+                if (domainFilter.options[i].value === domainName) {
+                    domainFilter.remove(i);
+                    break;
+                }
+            }
+        }
+    }
+
+    syncDomainSelects(activeDomains) {
+        const domainSelect = document.getElementById("domainSelect");
+        if (domainSelect && Array.isArray(activeDomains)) {
+            const currentVal = domainSelect.value;
+            domainSelect.innerHTML = activeDomains
+                .map((d) => `<option value="${this.escapeHtml(d)}">@${this.escapeHtml(d)}</option>`)
+                .join("");
+            if (currentVal && activeDomains.includes(currentVal)) {
+                domainSelect.value = currentVal;
+            }
         }
     }
 
