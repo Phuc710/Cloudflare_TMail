@@ -22,12 +22,18 @@ final class DatabaseOptimizer
         }
 
         self::$ensured = true;
+
+        try {
+            self::ensureApiTokensTable($db);
+        } catch (Throwable $e) {
+            error_log('DatabaseOptimizer api_tokens error: ' . $e->getMessage());
+        }
+
         if (is_file(self::MARKER_FILE)) {
             return;
         }
 
         try {
-            self::ensureApiTokensTable($db);
             self::ensureIndex($db, 'messages', 'idx_messages_email_received', '(email_id, received_at)');
             self::ensureIndex($db, 'messages', 'idx_messages_email_read', '(email_id, is_read)');
             self::writeMarker();

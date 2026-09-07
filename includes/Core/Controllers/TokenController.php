@@ -49,17 +49,21 @@ final class TokenController
     private function handlePost(Request $request): Response
     {
         $body = $request->getJson();
-        $name = trim((string) ($body['name'] ?? ''));
-        $rateLimit = (int) ($body['rate_limit_per_min'] ?? 120);
+        $name = trim((string) ($body['name'] ?? $request->string('name')));
+        $rateLimit = (int) ($body['rate_limit_per_min'] ?? $request->int('rate_limit_per_min', 120));
+
+        if ($name === '') {
+            throw ApiException::badRequest('Tên định danh Token không được để trống');
+        }
 
         $expiresAt = null;
-        if (isset($body['expires_days']) && is_numeric($body['expires_days'])) {
-            $days = (int) $body['expires_days'];
-            if ($days > 0) {
-                $expiresAt = date('Y-m-d H:i:s', time() + ($days * 86400));
-            }
+        $expiresDays = (int) ($body['expires_days'] ?? $request->int('expires_days', 0));
+        if ($expiresDays > 0) {
+            $expiresAt = date('Y-m-d H:i:s', time() + ($expiresDays * 86400));
         } elseif (!empty($body['expires_at'])) {
             $expiresAt = trim((string) $body['expires_at']);
+        } elseif ($request->string('expires_at') !== '') {
+            $expiresAt = $request->string('expires_at');
         }
 
         $token = $this->service->create($name, $rateLimit, $expiresAt);
@@ -74,8 +78,8 @@ final class TokenController
     private function handlePut(Request $request): Response
     {
         $body = $request->getJson();
-        $id = (int) ($body['id'] ?? 0);
-        $status = (int) ($body['status'] ?? 0);
+        $id = (int) ($body['id'] ?? $request->int('id', 0));
+        $status = (int) ($body['status'] ?? $request->int('status', 0));
 
         if ($id <= 0) {
             throw ApiException::badRequest('Thiếu ID token cần cập nhật');
@@ -94,7 +98,7 @@ final class TokenController
     private function handleDelete(Request $request): Response
     {
         $body = $request->getJson();
-        $id = (int) ($body['id'] ?? $request->getQuery('id', 0));
+        $id = (int) ($body['id'] ?? $request->int('id', 0));
 
         if ($id <= 0) {
             throw ApiException::badRequest('Thiếu ID token cần xóa');

@@ -25,6 +25,7 @@ try {
     // Fallback default
 }
 
+$homeCssUrl = asset_url('/css/home.css');
 $docsCssUrl = asset_url('/css/docs.css');
 ?>
 <!DOCTYPE html>
@@ -38,222 +39,255 @@ $docsCssUrl = asset_url('/css/docs.css');
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="<?= htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') ?>/assets/kaishop_favicon.png">
+    <link rel="stylesheet" href="<?= htmlspecialchars($homeCssUrl, ENT_QUOTES, 'UTF-8') ?>">
     <link rel="stylesheet" href="<?= htmlspecialchars($docsCssUrl, ENT_QUOTES, 'UTF-8') ?>">
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
 </head>
-<body>
-    <!-- Top Navbar -->
-    <header class="docs-navbar">
-        <div class="docs-brand">
-            <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Mở Menu">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+<body class="user-page-body">
+    <div class="user-page-container">
+        <!-- Reusable Site Header -->
+        <header class="user-topbar">
+            <a href="<?= htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') ?>/" class="brand-block" aria-label="KaiMail - Temp Mail">
+                <div class="brand-logo-anim" aria-hidden="true">
+                    <lottie-player
+                        id="brandLottieLogo"
+                        src="<?= htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') ?>/assets/logo.json?v=<?= @filemtime(__DIR__ . '/../assets/logo.json') ?: time() ?>"
+                        background="transparent"
+                        speed="0.75"
+                        loop
+                        autoplay
+                    ></lottie-player>
+                </div>
+            </a>
+
+            <div class="app-mode-selector" role="tablist">
+                <a href="<?= htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') ?>/" class="mode-tab" role="tab" style="text-decoration: none;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1-0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                        <polyline points="22,6 12,13 2,6" />
+                    </svg>
+                    <span>Temp Mail</span>
+                </a>
+                <a href="<?= htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') ?>/2fa" class="mode-tab" role="tab" style="text-decoration: none;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                    <span>Trình xác thực 2FA</span>
+                </a>
+                <a href="<?= htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') ?>/docs" class="mode-tab active" role="tab" style="text-decoration: none;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="16 18 22 12 16 6"></polyline>
+                        <polyline points="8 6 2 12 8 18"></polyline>
+                    </svg>
+                    <span>Tài liệu API</span>
+                </a>
+            </div>
+
+            <div class="topbar-clock" id="topbarClock" title="Giờ chuẩn Việt Nam (GMT+7)">
+                <span class="clock-time" id="clockTime">--:--:--</span>
+            </div>
+        </header>
+
+        <!-- Mobile TOC Sub-bar -->
+        <div class="mobile-toc-bar">
+            <button type="button" class="mobile-toc-btn" id="mobileTocBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="3" y1="12" x2="21" y2="12"></line>
                     <line x1="3" y1="6" x2="21" y2="6"></line>
                     <line x1="3" y1="18" x2="21" y2="18"></line>
                 </svg>
+                <span>Mục lục tài liệu API</span>
             </button>
-            <a href="<?= htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') ?>/" class="docs-logo">
-                <img src="<?= htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') ?>/assets/kaishop_favicon.png" alt="KaiMail Logo">
-                <span>KaiMail <span style="font-weight: 500; color: var(--docs-slate-500);">Docs</span></span>
-            </a>
-            <span class="docs-version-badge">API v3.0</span>
         </div>
 
-        <nav class="docs-nav-links">
-            <a href="<?= htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') ?>/" class="docs-nav-link">Giao diện Web</a>
-            <a href="<?= htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') ?>/2fa" class="docs-nav-link">Tool 2FA</a>
-            <a href="https://t.me/KaiHub_bot" target="_blank" rel="noopener noreferrer" class="docs-nav-link">Hỗ trợ Telegram</a>
-            <a href="<?= htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') ?>/adminkaishop" class="btn-docs-admin">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                </svg>
-                <span>Admin Login</span>
-            </a>
-        </nav>
-    </header>
+        <div class="docs-sidebar-overlay" id="sidebarOverlay"></div>
 
-    <div class="docs-sidebar-overlay" id="sidebarOverlay"></div>
-
-    <div class="docs-layout">
-        <!-- Sticky Sidebar Navigation -->
-        <aside class="docs-sidebar" id="docsSidebar">
-            <div class="sidebar-group">
-                <div class="sidebar-group-title">Bắt đầu</div>
-                <a href="#overview" class="sidebar-link active">Giới thiệu tổng quan</a>
-                <a href="#get-token" class="sidebar-link">Cấp phát API Token</a>
-                <a href="#authentication" class="sidebar-link">Xác thực HMAC-SHA256</a>
-                <a href="#quickstart" class="sidebar-link">Mã nguồn mẫu (SDK)</a>
-            </div>
-
-            <div class="sidebar-group">
-                <div class="sidebar-group-title">API Endpoints</div>
-                <a href="#endpoint-create-email" class="sidebar-link">
-                    <span class="method-tag post">POST</span>
-                    <span>Tạo Email</span>
-                </a>
-                <a href="#endpoint-list-messages" class="sidebar-link">
-                    <span class="method-tag get">GET</span>
-                    <span>Hộp thư Email</span>
-                </a>
-                <a href="#endpoint-get-message" class="sidebar-link">
-                    <span class="method-tag get">GET</span>
-                    <span>Chi tiết Tin nhắn</span>
-                </a>
-                <a href="#endpoint-long-poll" class="sidebar-link">
-                    <span class="method-tag get">GET</span>
-                    <span>Long Polling Realtime</span>
-                </a>
-                <a href="#endpoint-delete-email" class="sidebar-link">
-                    <span class="method-tag delete">DEL</span>
-                    <span>Xóa Email</span>
-                </a>
-                <a href="#endpoint-delete-message" class="sidebar-link">
-                    <span class="method-tag delete">DEL</span>
-                    <span>Xóa Tin nhắn</span>
-                </a>
-            </div>
-
-            <div class="sidebar-group">
-                <div class="sidebar-group-title">Quy chuẩn</div>
-                <a href="#rate-limits" class="sidebar-link">Giới hạn tần suất (Rate Limit)</a>
-                <a href="#error-codes" class="sidebar-link">Mã lỗi & HTTP Status</a>
-            </div>
-        </aside>
-
-        <!-- Main Content Area -->
-        <main class="docs-main">
-            <!-- Hero Header -->
-            <header class="docs-hero" id="overview">
-                <h1>Tài Liệu Tích Hợp KaiMail API</h1>
-                <p>
-                    Hệ thống API RESTful hiệu năng cao cho phép bạn tự động hóa tạo email tạm thời, nhận email xác minh, đọc mã OTP và lắng nghe email mới theo thời gian thực (Realtime Long Polling).
-                </p>
-                <div class="docs-callout success">
-                    <strong>Base URL chính thức:</strong> <code><?= htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') ?>/api</code>
+        <!-- Documentation Layout -->
+        <div class="docs-layout">
+            <!-- Sticky Sidebar Navigation -->
+            <aside class="docs-sidebar" id="docsSidebar">
+                <div class="sidebar-group">
+                    <div class="sidebar-group-title">Bắt đầu</div>
+                    <a href="#overview" class="sidebar-link active">Giới thiệu tổng quan</a>
+                    <a href="#get-token" class="sidebar-link">Cấp phát API Token</a>
+                    <a href="#authentication" class="sidebar-link">Xác thực HMAC-SHA256</a>
+                    <a href="#quickstart" class="sidebar-link">Mã nguồn mẫu (SDK)</a>
                 </div>
-            </header>
 
-            <!-- SECTION 1: LẤY TOKEN -->
-            <section class="docs-section" id="get-token">
-                <h2>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 2l-2 2m-1.5 1.5L14 9a5 5 0 1 0 3 3l3.5-3.5 2-2zM9 18a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"></path>
-                    </svg>
-                    1. Cấp Phát & Nhận API Token
-                </h2>
-                <p>
-                    Để đảm bảo an toàn và phân quyền tốc độ gọi (Rate Limit), KaiMail áp dụng cơ chế xác thực đa người dùng (Multi-tenant API Token). Mỗi bot, phần mềm hoặc khách hàng sẽ được cấp một cặp khóa độc lập:
-                </p>
+                <div class="sidebar-group">
+                    <div class="sidebar-group-title">API Endpoints</div>
+                    <a href="#endpoint-create-email" class="sidebar-link">
+                        <span class="method-tag post">POST</span>
+                        <span>Tạo Email</span>
+                    </a>
+                    <a href="#endpoint-list-messages" class="sidebar-link">
+                        <span class="method-tag get">GET</span>
+                        <span>Hộp thư Email</span>
+                    </a>
+                    <a href="#endpoint-get-message" class="sidebar-link">
+                        <span class="method-tag get">GET</span>
+                        <span>Chi tiết Tin nhắn</span>
+                    </a>
+                    <a href="#endpoint-long-poll" class="sidebar-link">
+                        <span class="method-tag get">GET</span>
+                        <span>Long Polling Realtime</span>
+                    </a>
+                    <a href="#endpoint-delete-email" class="sidebar-link">
+                        <span class="method-tag delete">DEL</span>
+                        <span>Xóa Email</span>
+                    </a>
+                    <a href="#endpoint-delete-message" class="sidebar-link">
+                        <span class="method-tag delete">DEL</span>
+                        <span>Xóa Tin nhắn</span>
+                    </a>
+                </div>
 
-                <div class="docs-steps">
-                    <div class="docs-step">
-                        <div class="step-num">1</div>
-                        <div class="step-content">
-                            <h3>Key ID (X-API-KEY)</h3>
-                            <p>Định danh công khai của bạn, có tiền tố <code>km_live_...</code>. Khóa này được gửi kèm trong mọi HTTP header request.</p>
+                <div class="sidebar-group">
+                    <div class="sidebar-group-title">Quy chuẩn</div>
+                    <a href="#rate-limits" class="sidebar-link">Giới hạn tần suất (Rate Limit)</a>
+                    <a href="#error-codes" class="sidebar-link">Mã lỗi & HTTP Status</a>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="docs-main">
+                <!-- Hero Header -->
+                <header class="docs-hero" id="overview">
+                    <div class="docs-hero-badge-row">
+                        <span class="docs-hero-badge">API v3.0 Live</span>
+                        <span class="docs-hero-badge guest">Dành cho Khách &amp; Lập trình viên</span>
+                    </div>
+                    <h1>Tài Liệu Tích Hợp KaiMail API</h1>
+                    <p>
+                        Hệ thống API RESTful hiệu năng cao cho phép bạn tự động hóa việc tạo email tạm thời, nhận email xác minh, đọc mã OTP và lắng nghe email mới theo thời gian thực (Realtime Long Polling).
+                    </p>
+                    <div class="docs-callout success">
+                        <strong>Base URL chính thức:</strong> <code><?= htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') ?>/api</code>
+                    </div>
+                </header>
+
+                <!-- SECTION 1: LẤY TOKEN -->
+                <section class="docs-section" id="get-token">
+                    <h2>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 2l-2 2m-1.5 1.5L14 9a5 5 0 1 0 3 3l3.5-3.5 2-2zM9 18a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"></path>
+                        </svg>
+                        1. Cấp Phát & Nhận API Token
+                    </h2>
+                    <p>
+                        Để đảm bảo an toàn và phân quyền tốc độ gọi (Rate Limit), KaiMail áp dụng cơ chế xác thực đa người dùng (Multi-tenant API Token). Mỗi bot, phần mềm hoặc khách hàng sẽ được cấp một cặp khóa độc lập:
+                    </p>
+
+                    <div class="docs-steps">
+                        <div class="docs-step">
+                            <div class="step-num">1</div>
+                            <div class="step-content">
+                                <h3>Key ID (X-API-KEY)</h3>
+                                <p>Định danh công khai của bạn, có tiền tố <code>km_live_...</code>. Khóa này được gửi kèm trong mọi HTTP header request.</p>
+                            </div>
+                        </div>
+                        <div class="docs-step">
+                            <div class="step-num">2</div>
+                            <div class="step-content">
+                                <h3>Secret Key (Bí mật)</h3>
+                                <p>Khóa bí mật có tiền tố <code>km_sec_...</code>. Dùng ở backend để ký chữ ký HMAC-SHA256 cho mỗi request. <strong>Tuyệt đối không để lộ Secret Key ra phía trình duyệt (Client-side)!</strong></p>
+                            </div>
                         </div>
                     </div>
-                    <div class="docs-step">
-                        <div class="step-num">2</div>
-                        <div class="step-content">
-                            <h3>Secret Key (Bí mật)</h3>
-                            <p>Khóa bí mật có tiền tố <code>km_sec_...</code>. Dùng ở backend để ký chữ ký HMAC-SHA256 cho mỗi request. <strong>Tuyệt đối không để lộ Secret Key ra phía trình duyệt (Client-side)!</strong></p>
+
+                    <div class="docs-callout">
+                        <strong>Chưa có Token?</strong> Vui lòng liên hệ Quản trị viên hệ thống qua Telegram <a href="https://t.me/KaiHub_bot" target="_blank" rel="noopener noreferrer">@KaiHub_bot</a> để được cấp Token và cấu hình hạn mức Rate Limit phù hợp với nhu cầu của bạn.
+                    </div>
+                </section>
+
+                <!-- SECTION 2: AUTHENTICATION -->
+                <section class="docs-section" id="authentication">
+                    <h2>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                        2. Cơ Chế Xác Thực HMAC-SHA256
+                    </h2>
+                    <p>
+                        Mọi yêu cầu gửi đến API đều phải chứa đủ <strong>4 HTTP Headers</strong> xác thực. Cơ chế này bảo vệ hệ thống khỏi các cuộc tấn công phát lại (Replay Attack) và ngăn chặn việc giả mạo tham số request.
+                    </p>
+
+                    <table class="param-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 25%;">Header Name</th>
+                                <th style="width: 20%;">Kiểu dữ liệu</th>
+                                <th>Mô tả chi tiết</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="param-name">X-API-KEY</span></td>
+                                <td><span class="param-type">string</span></td>
+                                <td>Key ID được cấp (Ví dụ: <code>km_live_9eb9b1...</code>).</td>
+                            </tr>
+                            <tr>
+                                <td><span class="param-name">X-API-TIMESTAMP</span></td>
+                                <td><span class="param-type">integer</span></td>
+                                <td>Thời gian hiện tại theo định dạng Unix Timestamp (tính bằng giây). Thời gian sai lệch so với máy chủ không được vượt quá 300 giây (5 phút).</td>
+                            </tr>
+                            <tr>
+                                <td><span class="param-name">X-API-NONCE</span></td>
+                                <td><span class="param-type">string</span></td>
+                                <td>Chuỗi ngẫu nhiên duy nhất cho mỗi request (độ dài 16 - 32 ký tự hex) để chống tấn công phát lại (Replay Attack).</td>
+                            </tr>
+                            <tr>
+                                <td><span class="param-name">X-API-SIGNATURE</span></td>
+                                <td><span class="param-type">string (hex)</span></td>
+                                <td>Chữ ký điện tử HMAC-SHA256 tính từ Payload và Secret Key.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3 style="font-size: 1.1rem; font-weight: 700; margin: 24px 0 12px;">Công thức tính Chữ ký (Signature)</h3>
+                    <div class="code-container">
+                        <div class="code-header">
+                            <span class="code-title">Payload Signing Formula</span>
+                            <button type="button" class="btn-copy-code" data-copy-target="formulaCode">Copy</button>
                         </div>
-                    </div>
-                </div>
-
-                <div class="docs-callout">
-                    <strong>Chưa có Token?</strong> Vui lòng liên hệ Quản trị viên hệ thống để được cấp Token và cấu hình hạn mức Rate Limit phù hợp với nhu cầu của bạn.
-                </div>
-            </section>
-
-            <!-- SECTION 2: AUTHENTICATION -->
-            <section class="docs-section" id="authentication">
-                <h2>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                    </svg>
-                    2. Cơ Chế Xác Thực HMAC-SHA256
-                </h2>
-                <p>
-                    Mọi yêu cầu gửi đến API đều phải chứa đủ <strong>4 HTTP Headers</strong> xác thực. Cơ chế này bảo vệ hệ thống khỏi các cuộc tấn công phát lại (Replay Attack) và ngăn chặn việc giả mạo tham số request.
-                </p>
-
-                <table class="param-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 25%;">Header Name</th>
-                            <th style="width: 20%;">Kiểu dữ liệu</th>
-                            <th>Mô tả chi tiết</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><span class="param-name">X-API-KEY</span></td>
-                            <td><span class="param-type">string</span></td>
-                            <td>Key ID được cấp (Ví dụ: <code>km_live_9eb9b1...</code>).</td>
-                        </tr>
-                        <tr>
-                            <td><span class="param-name">X-API-TIMESTAMP</span></td>
-                            <td><span class="param-type">integer</span></td>
-                            <td>Thời gian hiện tại theo định dạng Unix Timestamp (tính bằng giây). Thời gian sai lệch so với máy chủ không được vượt quá 300 giây (5 phút).</td>
-                        </tr>
-                        <tr>
-                            <td><span class="param-name">X-API-NONCE</span></td>
-                            <td><span class="param-type">string</span></td>
-                            <td>Chuỗi ngẫu nhiên duy nhất cho mỗi request (độ dài 16 - 32 ký tự hex) để chống tấn công phát lại (Replay Attack).</td>
-                        </tr>
-                        <tr>
-                            <td><span class="param-name">X-API-SIGNATURE</span></td>
-                            <td><span class="param-type">string (hex)</span></td>
-                            <td>Chữ ký điện tử HMAC-SHA256 tính từ Payload và Secret Key.</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <h3 style="font-size: 1.1rem; font-weight: 700; margin: 24px 0 12px;">Công thức tính Chữ ký (Signature)</h3>
-                <div class="code-container">
-                    <div class="code-header">
-                        <span class="code-title">Payload Signing Formula</span>
-                        <button type="button" class="btn-copy-code" data-copy-target="formulaCode">Copy</button>
-                    </div>
-                    <pre class="code-body" id="formulaCode">BODY_HASH = sha256(RAW_REQUEST_BODY)   // Nếu method GET hoặc không có body: sha256("")
+                        <pre class="code-body" id="formulaCode">BODY_HASH = sha256(RAW_REQUEST_BODY)   // Nếu method GET hoặc không có body: sha256("")
 PAYLOAD   = METHOD + "\n" + PATH + "\n" + TIMESTAMP + "\n" + NONCE + "\n" + BODY_HASH
 SIGNATURE = hmac_sha256(PAYLOAD, SECRET_KEY)</pre>
-                </div>
-            </section>
-
-            <!-- SECTION 3: QUICKSTART SDK CODE EXAMPLES -->
-            <section class="docs-section" id="quickstart">
-                <h2>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="16 18 22 12 16 6"></polyline>
-                        <polyline points="8 6 2 12 8 18"></polyline>
-                    </svg>
-                    3. Mã Nguồn Mẫu Đa Ngôn Ngữ (Ready-to-Run)
-                </h2>
-                <p>
-                    Chọn ngôn ngữ lập trình bạn sử dụng để xem đoạn mã mẫu hoàn chỉnh tự động tính toán HMAC Signature và gọi API:
-                </p>
-
-                <div class="lang-tabs-wrapper">
-                    <div class="lang-tabs-nav">
-                        <button type="button" class="lang-tab-btn active" data-lang="python">Python 3</button>
-                        <button type="button" class="lang-tab-btn" data-lang="nodejs">Node.js (JavaScript)</button>
-                        <button type="button" class="lang-tab-btn" data-lang="php">PHP</button>
-                        <button type="button" class="lang-tab-btn" data-lang="curl">cURL (Bash)</button>
-                        <button type="button" class="lang-tab-btn" data-lang="csharp">C# (.NET)</button>
                     </div>
+                </section>
 
-                    <!-- Python Example -->
-                    <div class="lang-panel active" id="lang-python">
-                        <div class="code-container">
-                            <div class="code-header">
-                                <span class="code-title">Python 3 (requests + hashlib + hmac)</span>
-                                <button type="button" class="btn-copy-code" data-copy-target="codePython">Copy Code</button>
-                            </div>
-                            <pre class="code-body" id="codePython">import time
+                <!-- SECTION 3: QUICKSTART SDK CODE EXAMPLES -->
+                <section class="docs-section" id="quickstart">
+                    <h2>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="16 18 22 12 16 6"></polyline>
+                            <polyline points="8 6 2 12 8 18"></polyline>
+                        </svg>
+                        3. Mã Nguồn Mẫu Đa Ngôn Ngữ (Ready-to-Run)
+                    </h2>
+                    <p>
+                        Chọn ngôn ngữ lập trình bạn sử dụng để xem đoạn mã mẫu hoàn chỉnh tự động tính toán HMAC Signature và gọi API:
+                    </p>
+
+                    <div class="lang-tabs-wrapper">
+                        <div class="lang-tabs-nav">
+                            <button type="button" class="lang-tab-btn active" data-lang="python">Python 3</button>
+                            <button type="button" class="lang-tab-btn" data-lang="nodejs">Node.js (JavaScript)</button>
+                            <button type="button" class="lang-tab-btn" data-lang="php">PHP</button>
+                            <button type="button" class="lang-tab-btn" data-lang="curl">cURL (Bash)</button>
+                            <button type="button" class="lang-tab-btn" data-lang="csharp">C# (.NET)</button>
+                        </div>
+
+                        <!-- Python Example -->
+                        <div class="lang-panel active" id="lang-python">
+                            <div class="code-container">
+                                <div class="code-header">
+                                    <span class="code-title">Python 3 (requests + hashlib + hmac)</span>
+                                    <button type="button" class="btn-copy-code" data-copy-target="codePython">Copy Code</button>
+                                </div>
+                                <pre class="code-body" id="codePython">import time
 import secrets
 import hashlib
 import hmac
@@ -295,17 +329,17 @@ if email_res.get("success"):
     email = email_res["data"]["email"]
     messages = call_api("GET", f"/api/emails/{email}/messages")
     print("Danh sách tin nhắn:", messages)</pre>
-                        </div>
-                    </div>
-
-                    <!-- Node.js Example -->
-                    <div class="lang-panel" id="lang-nodejs">
-                        <div class="code-container">
-                            <div class="code-header">
-                                <span class="code-title">Node.js (ES Module / CommonJS with crypto)</span>
-                                <button type="button" class="btn-copy-code" data-copy-target="codeNode">Copy Code</button>
                             </div>
-                            <pre class="code-body" id="codeNode">import crypto from 'crypto';
+                        </div>
+
+                        <!-- Node.js Example -->
+                        <div class="lang-panel" id="lang-nodejs">
+                            <div class="code-container">
+                                <div class="code-header">
+                                    <span class="code-title">Node.js (ES Module / CommonJS with crypto)</span>
+                                    <button type="button" class="btn-copy-code" data-copy-target="codeNode">Copy Code</button>
+                                </div>
+                                <pre class="code-body" id="codeNode">import crypto from 'crypto';
 
 const BASE_URL = "<?= htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') ?>";
 const API_KEY = "km_live_your_key_id";
@@ -338,17 +372,17 @@ async function callApi(method, path, body = null) {
 // Chạy thử tạo email
 const newMail = await callApi('POST', '/api/emails', { prefix: 'client' });
 console.log('Tạo email thành công:', newMail);</pre>
-                        </div>
-                    </div>
-
-                    <!-- PHP Example -->
-                    <div class="lang-panel" id="lang-php">
-                        <div class="code-container">
-                            <div class="code-header">
-                                <span class="code-title">PHP (cURL Native)</span>
-                                <button type="button" class="btn-copy-code" data-copy-target="codePhp">Copy Code</button>
                             </div>
-                            <pre class="code-body" id="codePhp">&lt;?php
+                        </div>
+
+                        <!-- PHP Example -->
+                        <div class="lang-panel" id="lang-php">
+                            <div class="code-container">
+                                <div class="code-header">
+                                    <span class="code-title">PHP (cURL Native)</span>
+                                    <button type="button" class="btn-copy-code" data-copy-target="codePhp">Copy Code</button>
+                                </div>
+                                <pre class="code-body" id="codePhp">&lt;?php
 $baseUrl = '<?= htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') ?>';
 $apiKey = 'km_live_your_key_id';
 $secretKey = 'km_sec_your_secret_key';
@@ -386,17 +420,17 @@ function callApi(string $method, string $path, array $data = null) {
 // Gọi tạo email
 $res = callApi('POST', '/api/emails', ['count' => 1]);
 print_r($res);</pre>
-                        </div>
-                    </div>
-
-                    <!-- cURL Example -->
-                    <div class="lang-panel" id="lang-curl">
-                        <div class="code-container">
-                            <div class="code-header">
-                                <span class="code-title">Bash / Terminal (openssl + curl)</span>
-                                <button type="button" class="btn-copy-code" data-copy-target="codeCurl">Copy Code</button>
                             </div>
-                            <pre class="code-body" id="codeCurl">#!/bin/bash
+                        </div>
+
+                        <!-- cURL Example -->
+                        <div class="lang-panel" id="lang-curl">
+                            <div class="code-container">
+                                <div class="code-header">
+                                    <span class="code-title">Bash / Terminal (openssl + curl)</span>
+                                    <button type="button" class="btn-copy-code" data-copy-target="codeCurl">Copy Code</button>
+                                </div>
+                                <pre class="code-body" id="codeCurl">#!/bin/bash
 BASE_URL="<?= htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') ?>"
 API_KEY="km_live_your_key_id"
 SECRET_KEY="km_sec_your_secret_key"
@@ -419,17 +453,17 @@ curl -X POST "${BASE_URL}${PATH_URL}" \
   -H "X-API-NONCE: ${NONCE}" \
   -H "X-API-SIGNATURE: ${SIGNATURE}" \
   -d "$BODY"</pre>
-                        </div>
-                    </div>
-
-                    <!-- C# Example -->
-                    <div class="lang-panel" id="lang-csharp">
-                        <div class="code-container">
-                            <div class="code-header">
-                                <span class="code-title">C# (.NET HttpClient + HMACSHA256)</span>
-                                <button type="button" class="btn-copy-code" data-copy-target="codeCsharp">Copy Code</button>
                             </div>
-                            <pre class="code-body" id="codeCsharp">using System;
+                        </div>
+
+                        <!-- C# Example -->
+                        <div class="lang-panel" id="lang-csharp">
+                            <div class="code-container">
+                                <div class="code-header">
+                                    <span class="code-title">C# (.NET HttpClient + HMACSHA256)</span>
+                                    <button type="button" class="btn-copy-code" data-copy-target="codeCsharp">Copy Code</button>
+                                </div>
+                                <pre class="code-body" id="codeCsharp">using System;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
@@ -467,78 +501,78 @@ class Program {
         Console.WriteLine(result);
     }
 }</pre>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            <!-- SECTION 4: API ENDPOINTS DETAILS -->
-            <section class="docs-section" id="endpoints">
-                <h2>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="8" y1="6" x2="21" y2="6"></line>
-                        <line x1="8" y1="12" x2="21" y2="12"></line>
-                        <line x1="8" y1="18" x2="21" y2="18"></line>
-                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
-                    </svg>
-                    4. Danh Sách Chi Tiết API Endpoints
-                </h2>
+                <!-- SECTION 4: API ENDPOINTS DETAILS -->
+                <section class="docs-section" id="endpoints">
+                    <h2>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="8" y1="6" x2="21" y2="6"></line>
+                            <line x1="8" y1="12" x2="21" y2="12"></line>
+                            <line x1="8" y1="18" x2="21" y2="18"></line>
+                            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                        </svg>
+                        4. Danh Sách Chi Tiết API Endpoints
+                    </h2>
 
-                <!-- Endpoint 1: Tạo Email -->
-                <div class="endpoint-card" id="endpoint-create-email">
-                    <div class="endpoint-header">
-                        <span class="endpoint-method post">POST</span>
-                        <span class="endpoint-path">/api/emails</span>
-                        <span class="endpoint-desc-brief">Tạo một hoặc nhiều địa chỉ email ngẫu nhiên / theo yêu cầu</span>
-                    </div>
-                    <div class="endpoint-body">
-                        <p style="font-size: 0.9rem; color: var(--docs-slate-600); margin-bottom: 14px;">
-                            Khởi tạo một địa chỉ email tạm thời mới. Hệ thống sẽ lắng nghe mọi thư gửi tới địa chỉ này tức thời qua Cloudflare.
-                        </p>
+                    <!-- Endpoint 1: Tạo Email -->
+                    <div class="endpoint-card" id="endpoint-create-email">
+                        <div class="endpoint-header">
+                            <span class="endpoint-method post">POST</span>
+                            <span class="endpoint-path">/api/emails</span>
+                            <span class="endpoint-desc-brief">Tạo một hoặc nhiều địa chỉ email ngẫu nhiên / theo yêu cầu</span>
+                        </div>
+                        <div class="endpoint-body">
+                            <p style="font-size: 0.9rem; color: var(--docs-slate-600); margin-bottom: 14px;">
+                                Khởi tạo một địa chỉ email tạm thời mới. Hệ thống sẽ lắng nghe mọi thư gửi tới địa chỉ này tức thời qua Cloudflare.
+                            </p>
 
-                        <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--docs-slate-700); text-transform: uppercase;">Tham số Request Body (JSON)</h4>
-                        <table class="param-table">
-                            <thead>
-                                <tr>
-                                    <th>Trường</th>
-                                    <th>Kiểu</th>
-                                    <th>Bắt buộc</th>
-                                    <th>Mô tả</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td><span class="param-name">prefix</span></td>
-                                    <td><span class="param-type">string</span></td>
-                                    <td><span class="badge-optional">Tùy chọn</span></td>
-                                    <td>Tự chọn tiền tố email (Ví dụ: <code>mybot</code> &rarr; <code>mybot@<?= htmlspecialchars($sampleDomain, ENT_QUOTES, 'UTF-8') ?></code>).</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="param-name">domain</span></td>
-                                    <td><span class="param-type">string</span></td>
-                                    <td><span class="badge-optional">Tùy chọn</span></td>
-                                    <td>Chọn domain cụ thể. Nếu không truyền sẽ lấy domain mặc định.</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="param-name">name_type</span></td>
-                                    <td><span class="param-type">string</span></td>
-                                    <td><span class="badge-optional">Tùy chọn</span></td>
-                                    <td>Kiểu sinh tên ngẫu nhiên: <code>vn</code> (Tên Việt Nam) hoặc <code>en</code> (Tên tiếng Anh). Mặc định là <code>vn</code>.</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="param-name">count</span></td>
-                                    <td><span class="param-type">integer</span></td>
-                                    <td><span class="badge-optional">Tùy chọn</span></td>
-                                    <td>Số lượng email tạo cùng lúc (Từ 1 đến 10). Mặc định là 1.</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                            <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--docs-slate-700); text-transform: uppercase;">Tham số Request Body (JSON)</h4>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Trường</th>
+                                        <th>Kiểu</th>
+                                        <th>Bắt buộc</th>
+                                        <th>Mô tả</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="param-name">prefix</span></td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td><span class="badge-optional">Tùy chọn</span></td>
+                                        <td>Tự chọn tiền tố email (Ví dụ: <code>mybot</code> &rarr; <code>mybot@<?= htmlspecialchars($sampleDomain, ENT_QUOTES, 'UTF-8') ?></code>).</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">domain</span></td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td><span class="badge-optional">Tùy chọn</span></td>
+                                        <td>Chọn domain cụ thể. Nếu không truyền sẽ lấy domain mặc định.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">name_type</span></td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td><span class="badge-optional">Tùy chọn</span></td>
+                                        <td>Kiểu sinh tên ngẫu nhiên: <code>vn</code> (Tên Việt Nam) hoặc <code>en</code> (Tên tiếng Anh). Mặc định là <code>vn</code>.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">count</span></td>
+                                        <td><span class="param-type">integer</span></td>
+                                        <td><span class="badge-optional">Tùy chọn</span></td>
+                                        <td>Số lượng email tạo cùng lúc (Từ 1 đến 10). Mặc định là 1.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
 
-                        <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--docs-slate-700); text-transform: uppercase;">Dữ liệu phản hồi mẫu (HTTP 201)</h4>
-                        <div class="code-container">
-                            <pre class="code-body">{
+                            <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--docs-slate-700); text-transform: uppercase;">Dữ liệu phản hồi mẫu (HTTP 201)</h4>
+                            <div class="code-container">
+                                <pre class="code-body">{
   "success": true,
   "count": 1,
   "data": {
@@ -548,51 +582,51 @@ class Program {
     "expires_at": null
   }
 }</pre>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Endpoint 2: Danh sách tin nhắn -->
-                <div class="endpoint-card" id="endpoint-list-messages">
-                    <div class="endpoint-header">
-                        <span class="endpoint-method get">GET</span>
-                        <span class="endpoint-path">/api/emails/{email}/messages</span>
-                        <span class="endpoint-desc-brief">Lấy danh sách các tin nhắn gửi đến một email</span>
-                    </div>
-                    <div class="endpoint-body">
-                        <p style="font-size: 0.9rem; color: var(--docs-slate-600); margin-bottom: 14px;">
-                            Truy xuất tất cả email đã nhận của địa chỉ email được chỉ định. Sắp xếp từ tin nhắn mới nhất đến cũ nhất.
-                        </p>
+                    <!-- Endpoint 2: Danh sách tin nhắn -->
+                    <div class="endpoint-card" id="endpoint-list-messages">
+                        <div class="endpoint-header">
+                            <span class="endpoint-method get">GET</span>
+                            <span class="endpoint-path">/api/emails/{email}/messages</span>
+                            <span class="endpoint-desc-brief">Lấy danh sách các tin nhắn gửi đến một email</span>
+                        </div>
+                        <div class="endpoint-body">
+                            <p style="font-size: 0.9rem; color: var(--docs-slate-600); margin-bottom: 14px;">
+                                Truy xuất tất cả email đã nhận của địa chỉ email được chỉ định. Sắp xếp từ tin nhắn mới nhất đến cũ nhất.
+                            </p>
 
-                        <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--docs-slate-700); text-transform: uppercase;">Tham số URL / Query</h4>
-                        <table class="param-table">
-                            <thead>
-                                <tr>
-                                    <th>Trường</th>
-                                    <th>Vị trí</th>
-                                    <th>Kiểu</th>
-                                    <th>Mô tả</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td><span class="param-name">email</span></td>
-                                    <td>Path</td>
-                                    <td><span class="param-type">string</span></td>
-                                    <td>Địa chỉ email cần kiểm tra (URL-encoded).</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="param-name">limit</span></td>
-                                    <td>Query</td>
-                                    <td><span class="param-type">integer</span></td>
-                                    <td>Số lượng tin nhắn tối đa cần lấy (Mặc định: 50, tối đa: 100).</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                            <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--docs-slate-700); text-transform: uppercase;">Tham số URL / Query</h4>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Trường</th>
+                                        <th>Vị trí</th>
+                                        <th>Kiểu</th>
+                                        <th>Mô tả</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="param-name">email</span></td>
+                                        <td>Path</td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td>Địa chỉ email cần kiểm tra (URL-encoded).</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">limit</span></td>
+                                        <td>Query</td>
+                                        <td><span class="param-type">integer</span></td>
+                                        <td>Số lượng tin nhắn tối đa cần lấy (Mặc định: 50, tối đa: 100).</td>
+                                    </tr>
+                                </tbody>
+                            </table>
 
-                        <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--docs-slate-700); text-transform: uppercase;">Dữ liệu phản hồi mẫu (HTTP 200)</h4>
-                        <div class="code-container">
-                            <pre class="code-body">{
+                            <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--docs-slate-700); text-transform: uppercase;">Dữ liệu phản hồi mẫu (HTTP 200)</h4>
+                            <div class="code-container">
+                                <pre class="code-body">{
   "success": true,
   "count": 1,
   "messages": [
@@ -607,45 +641,45 @@ class Program {
     }
   ]
 }</pre>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Endpoint 3: Chi tiết tin nhắn -->
-                <div class="endpoint-card" id="endpoint-get-message">
-                    <div class="endpoint-header">
-                        <span class="endpoint-method get">GET</span>
-                        <span class="endpoint-path">/api/messages.php?id={id}</span>
-                        <span class="endpoint-desc-brief">Xem toàn bộ nội dung HTML và Text của một tin nhắn</span>
-                    </div>
-                    <div class="endpoint-body">
-                        <p style="font-size: 0.9rem; color: var(--docs-slate-600); margin-bottom: 14px;">
-                            Lấy đầy đủ nội dung email gốc, bao gồm HTML rendered, văn bản thuần (plain text) và mã OTP được trích xuất tự động.
-                        </p>
+                    <!-- Endpoint 3: Chi tiết tin nhắn -->
+                    <div class="endpoint-card" id="endpoint-get-message">
+                        <div class="endpoint-header">
+                            <span class="endpoint-method get">GET</span>
+                            <span class="endpoint-path">/api/messages.php?id={id}</span>
+                            <span class="endpoint-desc-brief">Xem toàn bộ nội dung HTML và Text của một tin nhắn</span>
+                        </div>
+                        <div class="endpoint-body">
+                            <p style="font-size: 0.9rem; color: var(--docs-slate-600); margin-bottom: 14px;">
+                                Lấy đầy đủ nội dung email gốc, bao gồm HTML rendered, văn bản thuần (plain text) và mã OTP được trích xuất tự động.
+                            </p>
 
-                        <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--docs-slate-700); text-transform: uppercase;">Tham số Query</h4>
-                        <table class="param-table">
-                            <thead>
-                                <tr>
-                                    <th>Trường</th>
-                                    <th>Kiểu</th>
-                                    <th>Bắt buộc</th>
-                                    <th>Mô tả</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td><span class="param-name">id</span></td>
-                                    <td><span class="param-type">integer</span></td>
-                                    <td><span class="badge-required">Bắt buộc</span></td>
-                                    <td>ID của tin nhắn (lấy từ API danh sách tin nhắn).</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                            <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--docs-slate-700); text-transform: uppercase;">Tham số Query</h4>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Trường</th>
+                                        <th>Kiểu</th>
+                                        <th>Bắt buộc</th>
+                                        <th>Mô tả</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="param-name">id</span></td>
+                                        <td><span class="param-type">integer</span></td>
+                                        <td><span class="badge-required">Bắt buộc</span></td>
+                                        <td>ID của tin nhắn (lấy từ API danh sách tin nhắn).</td>
+                                    </tr>
+                                </tbody>
+                            </table>
 
-                        <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--docs-slate-700); text-transform: uppercase;">Dữ liệu phản hồi mẫu (HTTP 200)</h4>
-                        <div class="code-container">
-                            <pre class="code-body">{
+                            <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--docs-slate-700); text-transform: uppercase;">Dữ liệu phản hồi mẫu (HTTP 200)</h4>
+                            <div class="code-container">
+                                <pre class="code-body">{
   "success": true,
   "message": {
     "id": 9821,
@@ -657,57 +691,57 @@ class Program {
     "received_at": "2026-09-07 11:32:15"
   }
 }</pre>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Endpoint 4: Long Polling Realtime -->
-                <div class="endpoint-card" id="endpoint-long-poll">
-                    <div class="endpoint-header">
-                        <span class="endpoint-method get">GET</span>
-                        <span class="endpoint-path">/api/long-poll.php?email={email}</span>
-                        <span class="endpoint-desc-brief">Lắng nghe tin nhắn mới Realtime (Không spam request)</span>
-                    </div>
-                    <div class="endpoint-body">
-                        <p style="font-size: 0.9rem; color: var(--docs-slate-600); margin-bottom: 14px;">
-                            Thay vì phải gửi request liên tục (Short polling) gây tốn tài nguyên, Long Polling sẽ giữ kết nối HTTP tối đa 25 giây. Ngay khi có email vừa gửi tới, máy chủ lập tức trả về phản hồi ngay trong mili-giây!
-                        </p>
+                    <!-- Endpoint 4: Long Polling Realtime -->
+                    <div class="endpoint-card" id="endpoint-long-poll">
+                        <div class="endpoint-header">
+                            <span class="endpoint-method get">GET</span>
+                            <span class="endpoint-path">/api/long-poll.php?email={email}</span>
+                            <span class="endpoint-desc-brief">Lắng nghe tin nhắn mới Realtime (Không spam request)</span>
+                        </div>
+                        <div class="endpoint-body">
+                            <p style="font-size: 0.9rem; color: var(--docs-slate-600); margin-bottom: 14px;">
+                                Thay vì phải gửi request liên tục (Short polling) gây tốn tài nguyên, Long Polling sẽ giữ kết nối HTTP tối đa 25 giây. Ngay khi có email vừa gửi tới, máy chủ lập tức trả về phản hồi ngay trong mili-giây!
+                            </p>
 
-                        <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--docs-slate-700); text-transform: uppercase;">Tham số Query</h4>
-                        <table class="param-table">
-                            <thead>
-                                <tr>
-                                    <th>Trường</th>
-                                    <th>Kiểu</th>
-                                    <th>Bắt buộc</th>
-                                    <th>Mô tả</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td><span class="param-name">email</span></td>
-                                    <td><span class="param-type">string</span></td>
-                                    <td><span class="badge-required">Bắt buộc</span></td>
-                                    <td>Địa chỉ email cần lắng nghe thư mới.</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="param-name">last_id</span></td>
-                                    <td><span class="param-type">integer</span></td>
-                                    <td><span class="badge-optional">Tùy chọn</span></td>
-                                    <td>ID của tin nhắn cuối cùng đã nhận để chỉ lấy các tin nhắn mới hơn.</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="param-name">timeout</span></td>
-                                    <td><span class="param-type">integer</span></td>
-                                    <td><span class="badge-optional">Tùy chọn</span></td>
-                                    <td>Thời gian chờ tối đa (Mặc định: 25 giây, tối đa: 30 giây).</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                            <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--docs-slate-700); text-transform: uppercase;">Tham số Query</h4>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Trường</th>
+                                        <th>Kiểu</th>
+                                        <th>Bắt buộc</th>
+                                        <th>Mô tả</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="param-name">email</span></td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td><span class="badge-required">Bắt buộc</span></td>
+                                        <td>Địa chỉ email cần lắng nghe thư mới.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">last_id</span></td>
+                                        <td><span class="param-type">integer</span></td>
+                                        <td><span class="badge-optional">Tùy chọn</span></td>
+                                        <td>ID của tin nhắn cuối cùng đã nhận để chỉ lấy các tin nhắn mới hơn.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">timeout</span></td>
+                                        <td><span class="param-type">integer</span></td>
+                                        <td><span class="badge-optional">Tùy chọn</span></td>
+                                        <td>Thời gian chờ tối đa (Mặc định: 25 giây, tối đa: 30 giây).</td>
+                                    </tr>
+                                </tbody>
+                            </table>
 
-                        <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--docs-slate-700); text-transform: uppercase;">Dữ liệu phản hồi khi có thư mới</h4>
-                        <div class="code-container">
-                            <pre class="code-body">{
+                            <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--docs-slate-700); text-transform: uppercase;">Dữ liệu phản hồi khi có thư mới</h4>
+                            <div class="code-container">
+                                <pre class="code-body">{
   "status": "new_messages",
   "count": 1,
   "messages": [
@@ -719,129 +753,168 @@ class Program {
     }
   ]
 }</pre>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Endpoint 5: Xóa Email -->
-                <div class="endpoint-card" id="endpoint-delete-email">
-                    <div class="endpoint-header">
-                        <span class="endpoint-method delete">DELETE</span>
-                        <span class="endpoint-path">/api/emails.php?email={email}</span>
-                        <span class="endpoint-desc-brief">Xóa vĩnh viễn địa chỉ email và toàn bộ tin nhắn liên quan</span>
-                    </div>
-                    <div class="endpoint-body">
-                        <p style="font-size: 0.9rem; color: var(--docs-slate-600); margin-bottom: 14px;">
-                            Sau khi bot đã nhận OTP và hoàn tất tác vụ, gọi endpoint này để dọn dẹp sạch sẽ hòm thư.
-                        </p>
-                        <div class="code-container">
-                            <pre class="code-body">{
+                    <!-- Endpoint 5: Xóa Email -->
+                    <div class="endpoint-card" id="endpoint-delete-email">
+                        <div class="endpoint-header">
+                            <span class="endpoint-method delete">DELETE</span>
+                            <span class="endpoint-path">/api/emails.php?email={email}</span>
+                            <span class="endpoint-desc-brief">Xóa vĩnh viễn địa chỉ email và toàn bộ tin nhắn liên quan</span>
+                        </div>
+                        <div class="endpoint-body">
+                            <p style="font-size: 0.9rem; color: var(--docs-slate-600); margin-bottom: 14px;">
+                                Sau khi bot đã nhận OTP và hoàn tất tác vụ, gọi endpoint này để dọn dẹp sạch sẽ hòm thư.
+                            </p>
+                            <div class="code-container">
+                                <pre class="code-body">{
   "success": true,
   "message": "Đã xóa email thành công"
 }</pre>
+                            </div>
                         </div>
                     </div>
+                </section>
+
+                <!-- SECTION 5: RATE LIMITING -->
+                <section class="docs-section" id="rate-limits">
+                    <h2>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                        5. Giới Hạn Tần Suất (Rate Limiting)
+                    </h2>
+                    <p>
+                        Để đảm bảo tính ổn định của cụm máy chủ, mỗi API Token được gán một định mức tốc độ riêng (Mặc định 120 requests/phút). Mỗi phản hồi từ máy chủ luôn đính kèm các header sau:
+                    </p>
+
+                    <table class="param-table">
+                        <thead>
+                            <tr>
+                                <th>Header Response</th>
+                                <th>Mô tả</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="param-name">X-RateLimit-Limit</span></td>
+                                <td>Hạn mức tối đa số request được phép trong 1 phút của Token.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="param-name">X-RateLimit-Remaining</span></td>
+                                <td>Số lượng request còn lại trong chu kỳ 1 phút hiện tại.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="param-name">X-RateLimit-Reset</span></td>
+                                <td>Thời điểm (Unix Timestamp) hạn mức sẽ được làm mới lại.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="docs-callout warning">
+                        <strong>Khi vượt quá giới hạn:</strong> Hệ thống sẽ trả về mã lỗi <code>HTTP 429 Too Many Requests</code> kèm header <code>Retry-After: {giây}</code>. Vui lòng sleep theo thời gian này trước khi gửi request tiếp theo.
+                    </div>
+                </section>
+
+                <!-- SECTION 6: ERROR CODES -->
+                <section class="docs-section" id="error-codes">
+                    <h2>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        6. Bảng Mã Trạng Thái HTTP & Xử Lý Lỗi
+                    </h2>
+                    <table class="param-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 15%;">Mã HTTP</th>
+                                <th style="width: 25%;">Trạng thái</th>
+                                <th>Ý nghĩa & Cách khắc phục</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>200 / 201</strong></td>
+                                <td>Success / Created</td>
+                                <td>Thao tác thành công. Dữ liệu trả về trong đối tượng JSON.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>400</strong></td>
+                                <td>Bad Request</td>
+                                <td>Tham số gửi lên không hợp lệ, thiếu trường bắt buộc hoặc JSON bị lỗi cú pháp.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>401</strong></td>
+                                <td>Unauthorized</td>
+                                <td>Key ID sai, Secret Key không khớp, Token bị tạm khóa hoặc Timestamp quá lệch so với giờ chuẩn.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>403</strong></td>
+                                <td>Forbidden</td>
+                                <td>Token không có quyền thực hiện hành động này.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>404</strong></td>
+                                <td>Not Found</td>
+                                <td>Email hoặc tin nhắn cần tìm không tồn tại trong hệ thống.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>429</strong></td>
+                                <td>Too Many Requests</td>
+                                <td>Vượt quá giới hạn tần suất. Cần giảm tốc độ hoặc liên hệ Admin nâng hạn mức.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+            </main>
+        </div>
+
+        <!-- Reusable Site Footer -->
+        <footer class="user-page-footer">
+            <div class="footer-container">
+                <div class="footer-left">
+                    <span class="footer-brand-title">KaiMail</span>
+                    <span class="footer-sep" aria-hidden="true">•</span>
+                    <span class="footer-desc">Dịch vụ Temp Mail &amp; Trình xác thực 2FA miễn phí</span>
                 </div>
-            </section>
-
-            <!-- SECTION 5: RATE LIMITING -->
-            <section class="docs-section" id="rate-limits">
-                <h2>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                    </svg>
-                    5. Giới Hạn Tần Suất (Rate Limiting)
-                </h2>
-                <p>
-                    Để đảm bảo tính ổn định của cụm máy chủ, mỗi API Token được gán một định mức tốc độ riêng (Mặc định 120 requests/phút). Mỗi phản hồi từ máy chủ luôn đính kèm các header sau:
-                </p>
-
-                <table class="param-table">
-                    <thead>
-                        <tr>
-                            <th>Header Response</th>
-                            <th>Mô tả</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><span class="param-name">X-RateLimit-Limit</span></td>
-                            <td>Hạn mức tối đa số request được phép trong 1 phút của Token.</td>
-                        </tr>
-                        <tr>
-                            <td><span class="param-name">X-RateLimit-Remaining</span></td>
-                            <td>Số lượng request còn lại trong chu kỳ 1 phút hiện tại.</td>
-                        </tr>
-                        <tr>
-                            <td><span class="param-name">X-RateLimit-Reset</span></td>
-                            <td>Thời điểm (Unix Timestamp) hạn mức sẽ được làm mới lại.</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div class="docs-callout warning">
-                    <strong>Khi vượt quá giới hạn:</strong> Hệ thống sẽ trả về mã lỗi <code>HTTP 429 Too Many Requests</code> kèm header <code>Retry-After: {giây}</code>. Vui lòng sleep theo thời gian này trước khi gửi request tiếp theo.
+                <div class="footer-right">
+                    <span class="footer-eco-label">Hệ sinh thái:</span>
+                    <a href="https://kaishop.id.vn/" target="_blank" rel="noopener noreferrer" class="footer-link footer-link-kai">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"></path>
+                        </svg>
+                        <span>kaishop.id.vn</span>
+                    </a>
+                    <a href="https://t.me/KaiHub_bot" target="_blank" rel="noopener noreferrer" class="footer-link footer-link-tg">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.19-.08-.05-.19-.02-.27 0-.12.03-1.99 1.27-5.62 3.72-.53.36-1.01.54-1.44.53-.47-.01-1.38-.27-2.06-.49-.83-.27-1.49-.42-1.43-.88.03-.24.37-.49 1.02-.75 3.98-1.73 6.64-2.88 7.97-3.44 3.8-1.58 4.59-1.86 5.1-1.87.11 0 .37.03.53.17.14.12.18.28.2.45-.01.07.01.23 0 .32z" />
+                        </svg>
+                        <span>@KaiHub_bot</span>
+                    </a>
                 </div>
-            </section>
-
-            <!-- SECTION 6: ERROR CODES -->
-            <section class="docs-section" id="error-codes">
-                <h2>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="8" x2="12" y2="12"></line>
-                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                    </svg>
-                    6. Bảng Mã Trạng Thái HTTP & Xử Lý Lỗi
-                </h2>
-                <table class="param-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 15%;">Mã HTTP</th>
-                            <th style="width: 25%;">Trạng thái</th>
-                            <th>Ý nghĩa & Cách khắc phục</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>200 / 201</strong></td>
-                            <td>Success / Created</td>
-                            <td>Thao tác thành công. Dữ liệu trả về trong đối tượng JSON.</td>
-                        </tr>
-                        <tr>
-                            <td><strong>400</strong></td>
-                            <td>Bad Request</td>
-                            <td>Tham số gửi lên không hợp lệ, thiếu trường bắt buộc hoặc JSON bị lỗi cú pháp.</td>
-                        </tr>
-                        <tr>
-                            <td><strong>401</strong></td>
-                            <td>Unauthorized</td>
-                            <td>Key ID sai, Secret Key không khớp, Token bị tạm khóa hoặc Timestamp quá lệch so với giờ chuẩn.</td>
-                        </tr>
-                        <tr>
-                            <td><strong>403</strong></td>
-                            <td>Forbidden</td>
-                            <td>Token không có quyền thực hiện hành động này.</td>
-                        </tr>
-                        <tr>
-                            <td><strong>404</strong></td>
-                            <td>Not Found</td>
-                            <td>Email hoặc tin nhắn cần tìm không tồn tại trong hệ thống.</td>
-                        </tr>
-                        <tr>
-                            <td><strong>429</strong></td>
-                            <td>Too Many Requests</td>
-                            <td>Vượt quá giới hạn tần suất. Cần giảm tốc độ hoặc liên hệ Admin nâng hạn mức.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </section>
-        </main>
+            </div>
+        </footer>
     </div>
 
     <!-- Client-side Interactive Script -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Clock handler
+            function updateClock() {
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour12: false });
+                const el = document.getElementById('clockTime');
+                if (el) el.textContent = timeStr;
+            }
+            setInterval(updateClock, 1000);
+            updateClock();
+
             // 1. Language Tabs Switcher
             const tabButtons = document.querySelectorAll('.lang-tab-btn');
             const tabPanels = document.querySelectorAll('.lang-panel');
@@ -883,7 +956,7 @@ class Program {
             });
 
             // 3. Mobile Sidebar Toggle
-            const mobileBtn = document.getElementById('mobileMenuBtn');
+            const mobileBtn = document.getElementById('mobileTocBtn');
             const sidebar = document.getElementById('docsSidebar');
             const overlay = document.getElementById('sidebarOverlay');
 

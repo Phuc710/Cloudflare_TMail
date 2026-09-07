@@ -195,12 +195,41 @@ final class Request
         return $this->query[$key] ?? $default;
     }
 
+    public function getQuery(string $key = '', mixed $default = null): mixed
+    {
+        if ($key === '') {
+            return $this->query;
+        }
+        return $this->query[$key] ?? $default;
+    }
+
+    public function get(string $key = '', mixed $default = null): mixed
+    {
+        if ($key === '') {
+            return $this->query;
+        }
+        return $this->query[$key] ?? $default;
+    }
+
+    public function post(string $key = '', mixed $default = null): mixed
+    {
+        if ($key === '') {
+            return $this->body;
+        }
+        return $this->body[$key] ?? $default;
+    }
+
     public function all(): array
     {
         return array_merge($this->query, $this->body);
     }
 
     public function body(): array
+    {
+        return $this->body;
+    }
+
+    public function getJson(): array
     {
         return $this->body;
     }
