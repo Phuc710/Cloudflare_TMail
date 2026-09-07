@@ -2968,23 +2968,33 @@ input[type="checkbox"] {
 }
 
 /* ==========================================================================
-   API Docs Credentials & Code Snippet Styling
+   13. API Docs & Credentials Styling
    ========================================================================== */
 .credentials-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
-    margin: 20px 0 30px;
+    margin: 16px 0 28px;
+}
+
+@media (max-width: 900px) {
+    .credentials-container {
+        grid-template-columns: 1fr;
+    }
 }
 
 .credential-box {
     background: #ffffff;
-    border: 1.5px solid var(--border-subtle);
+    border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
-    padding: 16px 20px;
+    padding: 18px 20px;
     box-shadow: var(--shadow-xs);
     position: relative;
     transition: all var(--transition-fast);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
 }
 
 .credential-box:hover {
@@ -3001,22 +3011,23 @@ input[type="checkbox"] {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
+    gap: 8px;
 }
 
 .credential-label {
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: var(--slate-500);
+    color: var(--slate-700);
 }
 
 .credential-header-badge {
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 700;
-    padding: 2px 8px;
+    padding: 2px 9px;
     border-radius: var(--radius-full);
+    white-space: nowrap;
 }
 
 .badge-secret {
@@ -3037,6 +3048,13 @@ input[type="checkbox"] {
     border: 1px solid #cbd5e1;
 }
 
+.credential-desc {
+    font-size: 0.84rem;
+    color: var(--slate-500);
+    margin: 0;
+    line-height: 1.45;
+}
+
 .credential-value-wrapper {
     display: flex;
     align-items: center;
@@ -3044,30 +3062,32 @@ input[type="checkbox"] {
     gap: 10px;
     background: var(--slate-900);
     border-radius: var(--radius-md);
-    padding: 8px 12px;
-    margin-top: 6px;
+    padding: 9px 12px;
+    min-width: 0;
 }
 
 .credential-value-wrapper code {
     color: #38bdf8;
     font-family: var(--font-mono);
-    font-size: 0.84rem;
+    font-size: 0.83rem;
     word-break: break-all;
     user-select: all;
+    min-width: 0;
+    line-height: 1.4;
 }
 
 .btn-copy-mini-cred {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.12);
     border: 1px solid rgba(255, 255, 255, 0.2);
     color: #ffffff;
     border-radius: 6px;
-    padding: 4px 10px;
-    font-size: 0.75rem;
+    padding: 5px 12px;
+    font-size: 0.76rem;
     font-weight: 600;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     transition: all var(--transition-fast);
     white-space: nowrap;
     flex-shrink: 0;
@@ -3076,36 +3096,140 @@ input[type="checkbox"] {
 .btn-copy-mini-cred:hover {
     background: var(--primary);
     border-color: var(--primary);
+    transform: translateY(-1px);
 }
 
-.code-tabs-nav {
+.docs-section-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--slate-900);
+    letter-spacing: -0.02em;
+    margin: 32px 0 8px;
     display: flex;
-    gap: 4px;
-    background: var(--slate-800);
-    padding: 6px 10px;
-    border-top-left-radius: 0.5rem;
-    border-top-right-radius: 0.5rem;
-    overflow-x: auto;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-subtle);
 }
 
-.code-tab-btn {
-    background: transparent;
-    border: none;
-    color: var(--slate-400);
-    padding: 6px 14px;
-    font-size: 0.8rem;
+.docs-section-title svg {
+    color: var(--primary);
+    flex-shrink: 0;
+}
+
+.docs-section-desc {
+    color: var(--slate-600);
+    font-size: 0.92rem;
+    margin-bottom: 16px;
+    line-height: 1.6;
+}
+
+.badge-req {
+    background: #fee2e2;
+    color: #b91c1c;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: inline-block;
+}
+
+.badge-opt {
+    background: var(--slate-100);
+    color: var(--slate-600);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-size: 0.72rem;
     font-weight: 600;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all var(--transition-fast);
+    display: inline-block;
 }
 
-.code-tab-btn:hover {
-    color: #ffffff;
-    background: rgba(255, 255, 255, 0.05);
+.type-pill {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--slate-600);
+    background: var(--slate-100);
+    padding: 2px 6px;
+    border-radius: 4px;
 }
 
-.code-tab-btn.active {
-    color: #ffffff;
+.api-op-card {
+    background: #ffffff;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    margin-bottom: 14px;
+    overflow: hidden;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.api-op-card:hover {
+    border-color: var(--slate-300);
+    box-shadow: var(--shadow-xs);
+}
+
+.api-op-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    background: var(--slate-50);
+    border-bottom: 1px solid var(--border-subtle);
+    flex-wrap: wrap;
+}
+
+.api-op-body {
+    padding: 16px 18px;
+}
+
+.api-sub-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.api-sub-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--slate-50);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    font-size: 0.88rem;
+}
+
+.api-sub-item .endpoint-url {
+    font-size: 0.88rem;
+    color: var(--slate-900);
+}
+
+.formula-card {
     background: var(--slate-900);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin: 12px 0;
+    box-shadow: var(--shadow-xs);
+}
+
+.formula-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 14px;
+    background: var(--slate-800);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--slate-300);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.formula-body {
+    padding: 14px 16px;
+    color: #e2e8f0;
+    font-family: var(--font-mono);
+    font-size: 0.84rem;
+    line-height: 1.6;
+    margin: 0;
+    overflow-x: auto;
 }
