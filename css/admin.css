@@ -433,7 +433,11 @@ input:disabled {
     flex: 1;
     padding: 32px 36px;
     min-width: 0;
-    background: var(--bg-app);
+    background-color: var(--bg-app);
+    background-image: 
+        linear-gradient(to right, rgba(226, 232, 240, 0.45) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(226, 232, 240, 0.45) 1px, transparent 1px);
+    background-size: 32px 32px;
 }
 
 .page-header {
@@ -1742,84 +1746,636 @@ textarea.form-control {
 }
 
 /* ==============================================================================
-   13. Admin Login Page
+   13. Admin Login Page (Cyber Grid & Glassmorphism with Peeking Chibis)
    ============================================================================== */
 .login-page {
+    position: relative;
+    width: 100vw;
+    min-height: 100vh;
+    display: flex;
     justify-content: center;
     align-items: center;
     padding: 24px;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-    min-height: 100vh;
+    background-color: #080c16;
+    background: 
+        radial-gradient(ellipse 70% 50% at 50% -10%, rgba(16, 185, 129, 0.18) 0%, transparent 60%),
+        radial-gradient(circle at 15% 90%, rgba(6, 182, 212, 0.14) 0%, transparent 45%),
+        radial-gradient(circle at 85% 90%, rgba(99, 102, 241, 0.14) 0%, transparent 45%),
+        #080c16;
+    overflow: hidden;
 }
 
+/* Background Tech Grid Lines */
+.login-bg-grid {
+    position: fixed;
+    inset: 0;
+    background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: 38px 38px;
+    mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 1) 35%, rgba(0, 0, 0, 0.25) 90%);
+    -webkit-mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 1) 35%, rgba(0, 0, 0, 0.25) 90%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Glowing Cyber Ambient Beams */
+.login-cyber-lines {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+    overflow: hidden;
+}
+
+.cyber-beam-h {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.3), rgba(56, 189, 248, 0.6), rgba(16, 185, 129, 0.3), transparent);
+    opacity: 0.5;
+}
+
+.cyber-beam-h.top {
+    top: 24%;
+    animation: scanBeamH 12s ease-in-out infinite alternate;
+}
+
+.cyber-beam-h.bottom {
+    bottom: 22%;
+    animation: scanBeamH 15s ease-in-out infinite alternate-reverse;
+}
+
+.cyber-beam-v {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(180deg, transparent, rgba(16, 185, 129, 0.2), rgba(56, 189, 248, 0.4), transparent);
+    opacity: 0.4;
+}
+
+.cyber-beam-v.left {
+    left: 18%;
+}
+
+.cyber-beam-v.right {
+    right: 18%;
+}
+
+.cyber-ambient-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.orb-emerald {
+    width: 320px;
+    height: 320px;
+    background: rgba(16, 185, 129, 0.2);
+    top: -80px;
+    left: 50%;
+    transform: translateX(-50%);
+    animation: pulseOrb 8s ease-in-out infinite alternate;
+}
+
+.orb-cyan {
+    width: 280px;
+    height: 280px;
+    background: rgba(6, 182, 212, 0.15);
+    bottom: -60px;
+    left: -40px;
+}
+
+.orb-blue {
+    width: 280px;
+    height: 280px;
+    background: rgba(99, 102, 241, 0.15);
+    bottom: -60px;
+    right: -40px;
+}
+
+@keyframes scanBeamH {
+    0% { transform: translateY(0); opacity: 0.3; }
+    50% { opacity: 0.75; }
+    100% { transform: translateY(40px); opacity: 0.3; }
+}
+
+@keyframes pulseOrb {
+    0% { transform: translateX(-50%) scale(1); opacity: 0.4; }
+    100% { transform: translateX(-50%) scale(1.15); opacity: 0.7; }
+}
+
+/* ==============================================================================
+   Peeking Chibi Anime Characters
+   ============================================================================== */
+.peeking-chibi {
+    position: fixed;
+    bottom: 0;
+    z-index: 15;
+    user-select: none;
+    cursor: pointer;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s ease;
+    filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.6));
+    line-height: 0;
+}
+
+.peeking-chibi img {
+    display: block;
+    width: clamp(230px, 18vw, 320px);
+    height: auto;
+    object-fit: contain;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.peeking-chibi.peeking-left {
+    left: 0;
+    bottom: 0;
+    transform-origin: bottom left;
+    animation: chibiFloatLeft 4s ease-in-out infinite;
+}
+
+.peeking-chibi.peeking-right {
+    right: 0;
+    bottom: 0;
+    transform-origin: bottom right;
+    animation: chibiFloatRight 4.2s ease-in-out infinite;
+}
+
+@keyframes chibiFloatLeft {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-8px) rotate(1.5deg); }
+}
+
+@keyframes chibiFloatRight {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-8px) rotate(-1.5deg); }
+}
+
+/* Hover & Interactive States */
+.peeking-chibi:hover {
+    filter: drop-shadow(0 18px 36px rgba(16, 185, 129, 0.5));
+}
+
+.peeking-chibi.peeking-left:hover {
+    transform: translateY(-16px) rotate(2.5deg) scale(1.06);
+}
+
+.peeking-chibi.peeking-right:hover {
+    transform: translateY(-16px) rotate(-2.5deg) scale(1.06);
+}
+
+/* Active typing reactions */
+.peeking-chibi.peeking-left.active-typing {
+    transform: translateY(-20px) rotate(3.2deg) scale(1.08);
+    filter: drop-shadow(0 20px 42px rgba(16, 185, 129, 0.6));
+}
+
+.peeking-chibi.peeking-right.active-typing {
+    transform: translateY(-20px) rotate(-3.2deg) scale(1.08);
+    filter: drop-shadow(0 20px 42px rgba(6, 182, 212, 0.6));
+}
+
+/* Shake on error */
+.peeking-chibi.shake-chibi {
+    animation: chibiShake 0.5s ease-in-out !important;
+}
+
+@keyframes chibiShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px) rotate(-4deg); }
+    40% { transform: translateX(8px) rotate(4deg); }
+    60% { transform: translateX(-5px) rotate(-2deg); }
+    80% { transform: translateX(5px) rotate(2deg); }
+}
+
+/* Happy Jump on success */
+.peeking-chibi.happy-jump {
+    animation: chibiJump 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+@keyframes chibiJump {
+    0% { transform: translateY(0); }
+    40% { transform: translateY(-36px) scale(1.12); }
+    70% { transform: translateY(-12px) scale(1.05); }
+    100% { transform: translateY(-20px) scale(1.08); }
+}
+
+/* Cute Chibi Speech Bubble — shown on click only */
+.chibi-bubble {
+    display: none;
+}
+
+/* ==============================================================================
+   Login Card Container (Cyber Glassmorphism)
+   ============================================================================== */
 .login-container {
+    position: relative;
     width: 100%;
-    max-width: 420px;
+    max-width: 440px;
+    z-index: 20;
+    margin: auto;
 }
 
 .login-box {
-    background: #ffffff;
-    border: 1px solid var(--slate-200);
-    border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-xl);
-    padding: 36px;
+    position: relative;
+    background: rgba(13, 20, 36, 0.84);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 24px;
+    box-shadow: 
+        0 25px 60px -15px rgba(0, 0, 0, 0.75),
+        0 0 35px -8px rgba(16, 185, 129, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    padding: 36px 36px 30px;
+    overflow: hidden;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
+.login-box:hover {
+    border-color: rgba(56, 189, 248, 0.3);
+    box-shadow: 
+        0 30px 70px -15px rgba(0, 0, 0, 0.8),
+        0 0 45px -5px rgba(16, 185, 129, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* Glowing Top Accent Strip */
+.login-card-strip {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #10b981, #06b6d4, #3b82f6, #10b981);
+    background-size: 250% 100%;
+    animation: gradientFlow 4s linear infinite;
+}
+
+@keyframes gradientFlow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 250% 50%; }
+}
+
+/* Logo and Header */
 .login-header {
     text-align: center;
-    margin-bottom: 28px;
+    margin-bottom: 24px;
+}
+
+.login-logo-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.login-logo {
+    width: 66px;
+    height: 66px;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 22px rgba(16, 185, 129, 0.38));
+    animation: logoFloat 4.5s ease-in-out infinite;
+}
+
+@keyframes logoFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+.login-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #34d399;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    margin-bottom: 10px;
+}
+
+.login-chip-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+    animation: chipPulse 2s ease-in-out infinite;
+}
+
+@keyframes chipPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
 }
 
 .login-header h1 {
-    font-size: 1.55rem;
+    font-size: 1.6rem;
     font-weight: 800;
-    color: var(--slate-900);
-    letter-spacing: -0.02em;
+    color: #f8fafc;
+    letter-spacing: -0.025em;
+    line-height: 1.25;
 }
 
-.login-header p {
-    color: var(--slate-500);
+.login-header p.field-note {
+    color: #94a3b8;
     font-size: 0.88rem;
     margin-top: 6px;
 }
 
-.btn-login {
+/* Clean High-Specificity Form Input Styles */
+.login-box .form-group {
+    margin-bottom: 18px;
+}
+
+.login-box .login-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #cbd5e1;
+    font-size: 0.88rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.login-box .label-badge {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.12);
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+}
+
+.login-box .password-field-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
     width: 100%;
-    min-height: 44px;
-    border: 1px solid var(--primary);
-    border-radius: var(--radius-md);
-    background: var(--primary);
-    color: #ffffff;
-    font-size: 0.95rem;
-    font-weight: 700;
+}
+
+.login-box .field-icon-left {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    z-index: 5;
+    transition: color 0.2s ease;
+}
+
+.login-box .form-group input[type="password"],
+.login-box .form-group input[type="text"],
+.login-box .password-input-styled {
+    width: 100% !important;
+    height: 50px !important;
+    min-height: 50px !important;
+    padding: 10px 46px 10px 44px !important;
+    background: rgba(15, 23, 42, 0.75) !important;
+    border: 1.5px solid rgba(56, 189, 248, 0.22) !important;
+    border-radius: 12px !important;
+    color: #f8fafc !important;
+    font-size: 0.96rem !important;
+    font-family: inherit !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25) !important;
+    transition: all 0.2s ease !important;
+}
+
+.login-box .form-group input[type="password"]::placeholder,
+.login-box .form-group input[type="text"]::placeholder,
+.login-box .password-input-styled::placeholder {
+    color: #64748b !important;
+    font-weight: 400 !important;
+}
+
+.login-box .form-group input[type="password"]:focus,
+.login-box .form-group input[type="text"]:focus,
+.login-box .password-input-styled:focus {
+    background: rgba(15, 23, 42, 0.95) !important;
+    border-color: #10b981 !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.22), 0 0 20px rgba(16, 185, 129, 0.18) !important;
+    outline: none !important;
+}
+
+.login-box .form-group input:focus ~ .field-icon-left {
+    color: #34d399;
+}
+
+.login-box .btn-toggle-pwd {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #64748b;
     cursor: pointer;
-    transition: all var(--transition-fast);
-    box-shadow: 0 1px 2px 0 rgba(5, 150, 105, 0.2);
+    padding: 6px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    transition: color 0.15s ease, background 0.15s ease;
 }
 
-.btn-login:hover {
-    background: var(--primary-hover);
-    border-color: var(--primary-hover);
+.login-box .btn-toggle-pwd:hover {
+    color: #f8fafc;
+    background: rgba(255, 255, 255, 0.1);
 }
 
-.error-message {
-    border: 1px solid var(--danger-border);
-    border-radius: var(--radius-md);
-    background: var(--danger-light);
-    color: var(--danger);
+.login-box .btn-toggle-pwd svg {
+    display: block;
+}
+
+/* Submit Button (Cyber Emerald Gradient) */
+.btn-login-cyber {
+    width: 100%;
+    height: 48px;
+    margin-top: 14px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff;
+    border: 1px solid rgba(16, 185, 129, 0.5);
+    border-radius: 12px;
+    font-size: 0.96rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px 0 rgba(16, 185, 129, 0.38);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-login-cyber:hover:not(:disabled) {
+    background: linear-gradient(135deg, #34d399 0%, #047857 100%);
+    box-shadow: 0 6px 24px rgba(16, 185, 129, 0.55);
+    transform: translateY(-1px);
+}
+
+.btn-login-cyber:active:not(:disabled) {
+    transform: translateY(1px);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+}
+
+.btn-login-cyber:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Alert Messages (Dark Mode) */
+.login-box .error-message {
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: 10px;
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
     padding: 10px 14px;
     font-size: 0.88rem;
     margin-bottom: 16px;
 }
 
-.status-message {
-    border: 1px solid var(--info-border);
-    border-radius: var(--radius-md);
-    background: var(--info-light);
-    color: var(--info);
+.login-box .status-message {
+    border: 1px solid rgba(6, 182, 212, 0.4);
+    border-radius: 10px;
+    background: rgba(6, 182, 212, 0.15);
+    color: #67e8f9;
     padding: 10px 14px;
     font-size: 0.88rem;
     margin-bottom: 16px;
+}
+
+/* Security Footer inside Card */
+.login-card-footer {
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    color: #64748b;
+    font-size: 0.78rem;
+}
+
+.login-card-footer svg {
+    color: #10b981;
+}
+
+/* ==============================================================================
+   Admin Page Footer Component with footer-end.png
+   ============================================================================== */
+.admin-page-footer {
+    width: 100%;
+    margin-top: 48px;
+    padding-top: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 10;
+}
+
+.admin-footer-art {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    margin-bottom: -1px;
+    width: 100%;
+}
+
+.admin-footer-art .footer-end-banner-img {
+    display: block;
+    max-width: 440px;
+    width: 85%;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 16px rgba(15, 23, 42, 0.08));
+    user-select: none;
+    pointer-events: none;
+    transition: transform 0.25s ease;
+}
+
+.admin-page-footer:hover .footer-end-banner-img {
+    transform: translateY(-2px);
+}
+
+.admin-footer-bar {
+    width: 100%;
+    border-top: 1px solid var(--border-subtle);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: var(--slate-500);
+    background: #ffffff;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xs);
+    flex-wrap: wrap;
+}
+
+.admin-footer-brand {
+    font-weight: 700;
+    color: var(--slate-800);
+}
+
+.admin-footer-sep {
+    color: var(--slate-300);
+}
+
+/* ==============================================================================
+   Responsive Queries for Chibis & Card
+   ============================================================================== */
+@media (max-width: 1200px) {
+    .peeking-chibi img {
+        width: clamp(180px, 16vw, 240px);
+    }
+}
+
+@media (max-width: 860px) {
+    .peeking-chibi img {
+        width: clamp(130px, 14vw, 170px);
+    }
+    .peeking-chibi {
+        pointer-events: none;
+        opacity: 0.9;
+    }
+    .chibi-bubble {
+        display: none;
+    }
+}
+
+@media (max-width: 540px) {
+    .login-box {
+        padding: 28px 22px 24px;
+        border-radius: 20px;
+    }
+    .peeking-chibi img {
+        width: 110px;
+    }
+    .peeking-chibi {
+        opacity: 0.8;
+    }
 }
 
 /* ==============================================================================

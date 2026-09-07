@@ -1,9 +1,9 @@
 {
     "/css/home.css": "/static/css/home.10b46cb442.min.css",
-    "/css/admin.css": "/static/css/admin.2340a9d795.min.css",
+    "/css/admin.css": "/static/css/admin.63a6590dcd.min.css",
     "/js/app.js": "/static/js/app.8363d4487c.min.js",
     "/js/longPolling.js": "/static/js/longPolling.8419155615.min.js",
     "/js/admin.js": "/static/js/admin.a0ff557c2e.min.js",
     "/js/admin-dashboard.js": "/static/js/admin-dashboard.5d632ab0ff.min.js",
-    "/js/admin-login.js": "/static/js/admin-login.4aacbbfde7.min.js"
+    "/js/admin-login.js": "/static/js/admin-login.741a480e38.min.js"
 }
