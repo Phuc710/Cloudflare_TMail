@@ -58,6 +58,3 @@ DEALLOCATE PREPARE stmt;
 
 -- 2. Đảm bảo toàn bộ domain hiện tại được đánh dấu là 'system'
 UPDATE `domains` SET `type` = 'system' WHERE `type` IS NULL OR `type` = '';
-
--- Hoàn tất migration
-SELECT 'Migration 2026_09_07_custom_domain_support completed successfully!' AS status;
