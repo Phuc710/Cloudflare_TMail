@@ -155,8 +155,8 @@ $docsCssUrl = asset_url('/css/docs.css');
                 <!-- Hero Header -->
                 <header class="docs-hero" id="overview">
                     <div class="docs-hero-badge-row">
-                        <span class="docs-hero-badge">API v3.0 Live</span>
-                        <span class="docs-hero-badge guest">Dành cho Khách &amp; Lập trình viên</span>
+                        <span class="docs-hero-badge">v1</span>
+                        <span class="docs-hero-badge guest">Tích hợp BOT</span>
                     </div>
                     <h1>Tài Liệu Tích Hợp KaiMail API</h1>
                     <p>
