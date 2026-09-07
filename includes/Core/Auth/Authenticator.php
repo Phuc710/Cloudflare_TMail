@@ -3,10 +3,12 @@ declare(strict_types=1);
 
 namespace KaiMail\Core\Auth;
 
+use KaiMail\Core\App;
 use KaiMail\Core\Http\ApiException;
 use KaiMail\Core\Http\Request;
 use KaiMail\Core\Security\RateLimiter;
 use KaiMail\Core\Security\ReplayGuard;
+use KaiMail\Core\Services\TokenService;
 
 /**
  * Unified multi-strategy authentication pipeline with rate-limiting & network checks.
@@ -65,13 +67,24 @@ final class Authenticator
         $apiSignature = $request->getHeader('X-API-SIGNATURE');
 
         if ($apiKey !== '' && $apiTimestamp !== '' && $apiSignature !== '') {
-            if (self::verifyHmac($request, $apiKey, $apiTimestamp, $apiNonce, $apiSignature)) {
+            $hmacResult = self::verifyHmac($request, $apiKey, $apiTimestamp, $apiNonce, $apiSignature);
+            if ($hmacResult !== false) {
+                $metadata = [
+                    'key_prefix' => substr($apiKey, 0, 8),
+                    'ip' => $request->getClientIp(),
+                ];
+                if (is_array($hmacResult)) {
+                    $metadata['rate_limit'] = (int) ($hmacResult['rate_limit_per_min'] ?? 120);
+                    $metadata['token_id'] = (int) $hmacResult['id'];
+                    $metadata['token_name'] = (string) ($hmacResult['name'] ?? '');
+                }
+
                 return new AuthContext(
                     Role::API_USER,
                     substr($apiKey, 0, 12),
                     'api_hmac',
                     Permission::forRole(Role::API_USER),
-                    ['key_prefix' => substr($apiKey, 0, 8), 'ip' => $request->getClientIp()]
+                    $metadata
                 );
             }
         }
@@ -123,11 +136,14 @@ final class Authenticator
         $ip = $request->getClientIp() ?: 'unknown';
         $role = $context->getRole();
 
-        $limit = match ($role) {
-            Role::ADMIN => defined('ADMIN_RATE_LIMIT_PER_MIN') ? (int) ADMIN_RATE_LIMIT_PER_MIN : 60,
-            Role::WEBHOOK => 600, // High throughput for inbound emails
-            default => defined('API_RATE_LIMIT_PER_MIN') ? (int) API_RATE_LIMIT_PER_MIN : 120,
-        };
+        $customLimit = $context->getMetadata('rate_limit');
+        $limit = ($customLimit !== null && (int) $customLimit > 0)
+            ? (int) $customLimit
+            : match ($role) {
+                Role::ADMIN => defined('ADMIN_RATE_LIMIT_PER_MIN') ? (int) ADMIN_RATE_LIMIT_PER_MIN : 60,
+                Role::WEBHOOK => 600, // High throughput for inbound emails
+                default => defined('API_RATE_LIMIT_PER_MIN') ? (int) API_RATE_LIMIT_PER_MIN : 120,
+            };
 
         $scope = 'rate_' . $role->value;
         $identifier = $ip . '|' . $context->getIdentifier();
@@ -153,18 +169,45 @@ final class Authenticator
         return \Auth::isLoggedIn();
     }
 
+    /**
+     * @return array<string, mixed>|bool Returns token array if dynamic token, true if static .env key.
+     */
     private static function verifyHmac(
         Request $request,
         string $apiKey,
         string $timestampHeader,
         string $nonce,
         string $signature
-    ): bool {
-        $expectedKey = defined('API_ACCESS_KEY') ? (string) API_ACCESS_KEY : (string) getenv('API_ACCESS_KEY');
-        $secretKey = defined('API_SECRET_KEY') ? (string) API_SECRET_KEY : (string) getenv('API_SECRET_KEY');
+    ): array|bool {
+        $customToken = null;
+        $secretKey = '';
 
-        if ($expectedKey === '' || !hash_equals($expectedKey, $apiKey)) {
-            throw ApiException::unauthorized('API key không hợp lệ');
+        try {
+            $tokenService = App::getService(TokenService::class);
+            $token = $tokenService->findByKeyId($apiKey);
+            if ($token !== null) {
+                if ((int) $token['status'] !== 1) {
+                    throw ApiException::unauthorized('API Token đã bị vô hiệu hóa');
+                }
+                if (!empty($token['expires_at']) && strtotime((string) $token['expires_at']) < time()) {
+                    throw ApiException::unauthorized('API Token đã hết hạn sử dụng');
+                }
+                $secretKey = (string) $token['secret_key'];
+                $customToken = $token;
+            }
+        } catch (ApiException $ae) {
+            throw $ae;
+        } catch (\Throwable $e) {
+            // DB fallback or table error
+        }
+
+        if ($customToken === null) {
+            $expectedKey = defined('API_ACCESS_KEY') ? (string) API_ACCESS_KEY : (string) getenv('API_ACCESS_KEY');
+            $secretKey = defined('API_SECRET_KEY') ? (string) API_SECRET_KEY : (string) getenv('API_SECRET_KEY');
+
+            if ($expectedKey === '' || !hash_equals($expectedKey, $apiKey)) {
+                throw ApiException::unauthorized('API key không hợp lệ');
+            }
         }
 
         $timestamp = (int) $timestampHeader;
@@ -198,6 +241,16 @@ final class Authenticator
             if (!ReplayGuard::verifyNonce('api', $nonce, $nonceTtl)) {
                 throw ApiException::unauthorized('Nonce đã được sử dụng hoặc không hợp lệ');
             }
+        }
+
+        if ($customToken !== null) {
+            try {
+                $tokenService = App::getService(TokenService::class);
+                $tokenService->recordUsage((int) $customToken['id']);
+            } catch (\Throwable) {
+                // Ignore stats increment error
+            }
+            return $customToken;
         }
 
         return true;

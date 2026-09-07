@@ -3233,3 +3233,171 @@ input[type="checkbox"] {
     margin: 0;
     overflow-x: auto;
 }
+
+/* ==============================================================================
+   Token Management Components
+   ============================================================================== */
+.token-key-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--slate-100);
+    border: 1px solid var(--border-subtle);
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--slate-800);
+    max-width: 100%;
+}
+
+.token-key-display .key-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+    user-select: all;
+}
+
+.token-key-display .key-text.secret-masked {
+    letter-spacing: 0.15em;
+    color: var(--slate-500);
+    user-select: none;
+}
+
+.token-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    color: var(--slate-500);
+    transition: all var(--transition-fast);
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.token-icon-btn:hover {
+    background: var(--slate-200);
+    color: var(--slate-900);
+}
+
+.token-icon-btn.active {
+    color: var(--primary);
+    background: var(--primary-light);
+}
+
+/* iOS Toggle Switch */
+.ios-switch {
+    position: relative;
+    display: inline-block;
+    width: 42px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.ios-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.ios-switch-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--slate-300);
+    transition: var(--transition-smooth);
+    border-radius: 24px;
+}
+
+.ios-switch-slider::before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: var(--transition-smooth);
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.ios-switch input:checked + .ios-switch-slider {
+    background-color: var(--primary);
+}
+
+.ios-switch input:focus + .ios-switch-slider {
+    box-shadow: 0 0 0 3px var(--primary-ring);
+}
+
+.ios-switch input:checked + .ios-switch-slider::before {
+    transform: translateX(18px);
+}
+
+.ios-switch input:disabled + .ios-switch-slider {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Status Badges for Tokens */
+.token-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: var(--radius-full);
+}
+
+.token-badge.active {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+
+.token-badge.disabled {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+}
+
+.token-badge.expired {
+    background: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+.token-rate-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+    padding: 3px 8px;
+    border-radius: var(--radius-full);
+    font-size: 0.76rem;
+    font-weight: 600;
+    font-family: var(--font-mono);
+}
+
+.table-token-name {
+    font-weight: 600;
+    color: var(--slate-900);
+    display: block;
+}
+
+.table-token-sub {
+    font-size: 0.78rem;
+    color: var(--slate-500);
+}

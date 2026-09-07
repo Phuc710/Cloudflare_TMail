@@ -25,6 +25,7 @@ final class Permission
 
     public const DOMAIN_MANAGE = 'domain:manage';
     public const DOMAIN_LIST_ACTIVE = 'domain:list_active';
+    public const TOKEN_MANAGE = 'token:manage';
     public const STATS_VIEW = 'stats:view';
     public const CHECKER_RUN = 'checker:run';
 
@@ -53,6 +54,7 @@ final class Permission
                 self::LONG_POLL_SYSTEM,
                 self::DOMAIN_MANAGE,
                 self::DOMAIN_LIST_ACTIVE,
+                self::TOKEN_MANAGE,
                 self::STATS_VIEW,
                 self::CHECKER_RUN,
             ],

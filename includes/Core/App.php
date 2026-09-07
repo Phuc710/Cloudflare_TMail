@@ -16,6 +16,7 @@ use KaiMail\Core\Services\MessageService;
 use KaiMail\Core\Services\DomainService;
 use KaiMail\Core\Services\StatsService;
 use KaiMail\Core\Services\CheckerService;
+use KaiMail\Core\Services\TokenService;
 
 /**
  * Micro Application Kernel & Dependency Container.
@@ -66,6 +67,7 @@ final class App
             DomainService::class => new DomainService(self::$db),
             StatsService::class => new StatsService(self::$db),
             CheckerService::class => new CheckerService(self::$db),
+            TokenService::class => new TokenService(self::$db),
             default => throw new \InvalidArgumentException("Unknown service: {$class}"),
         };
 
@@ -93,6 +95,9 @@ final class App
             ),
             Controllers\CheckerController::class => new Controllers\CheckerController(
                 self::getService(CheckerService::class)
+            ),
+            Controllers\TokenController::class => new Controllers\TokenController(
+                self::getService(TokenService::class)
             ),
             Controllers\LongPollController::class => new Controllers\LongPollController(
                 self::getDb()

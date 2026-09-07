@@ -17,6 +17,12 @@ final class AdminLayout
             'icon' => '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />',
         ],
         [
+            'key' => 'tokens',
+            'label' => 'Quản lý API Token',
+            'path' => '/adminkaishop/tokens',
+            'icon' => '<path d="M21 2l-2 2m-1.5 1.5L14 9a5 5 0 1 0 3 3l3.5-3.5 2-2zM9 18a3 3 0 1 1 0-6 3 3 0 0 1 0 6z" />',
+        ],
+        [
             'key' => 'docs-domain',
             'label' => 'Hướng dẫn domain',
             'path' => '/adminkaishop/docs-domain',

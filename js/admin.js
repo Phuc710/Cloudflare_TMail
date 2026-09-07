@@ -21,6 +21,7 @@ class AdminCore {
         this.bindCreateEmailForm();
         this.bindAddDomainForm();
         this.bindDomainManagement();
+        this.bindTokenManagement();
         this.bindMobileMenu();
     }
 
@@ -979,6 +980,201 @@ class AdminCore {
             if (currentVal && activeDomains.includes(currentVal)) {
                 domainSelect.value = currentVal;
             }
+        }
+    }
+
+    bindTokenManagement() {
+        const tokensTable = document.getElementById("tokensTable");
+        const addTokenForm = document.getElementById("addTokenForm");
+        if (!tokensTable && !addTokenForm) return;
+
+        // Copy buttons (delegated)
+        document.addEventListener("click", (e) => {
+            const btnCopy = e.target.closest(".btn-copy-key");
+            if (btnCopy) {
+                const val = btnCopy.getAttribute("data-copy-value");
+                if (val) {
+                    this.copyToClipboard(val);
+                }
+                return;
+            }
+
+            // Reveal/Hide Secret Key (delegated)
+            const btnToggle = e.target.closest(".btn-toggle-secret");
+            if (btnToggle) {
+                const targetId = btnToggle.getAttribute("data-target");
+                const targetEl = document.getElementById(targetId);
+                if (!targetEl) return;
+
+                const iconEye = btnToggle.querySelector(".icon-eye");
+                const iconEyeOff = btnToggle.querySelector(".icon-eye-off");
+                const rawSecret = targetEl.getAttribute("data-raw-secret") || "";
+
+                if (targetEl.classList.contains("secret-masked")) {
+                    targetEl.classList.remove("secret-masked");
+                    targetEl.textContent = rawSecret;
+                    btnToggle.classList.add("active");
+                    if (iconEye) iconEye.classList.add("hidden");
+                    if (iconEyeOff) iconEyeOff.classList.remove("hidden");
+                } else {
+                    targetEl.classList.add("secret-masked");
+                    targetEl.textContent = "••••••••••••••••••••••••••••";
+                    btnToggle.classList.remove("active");
+                    if (iconEye) iconEye.classList.remove("hidden");
+                    if (iconEyeOff) iconEyeOff.classList.add("hidden");
+                }
+                return;
+            }
+
+            // Delete token button (delegated)
+            const btnDelete = e.target.closest(".btn-delete-token");
+            if (btnDelete) {
+                const tokenId = btnDelete.getAttribute("data-token-id");
+                const tokenName = btnDelete.getAttribute("data-token-name") || "Token";
+                if (!tokenId) return;
+
+                this.confirmAction({
+                    title: "Thu hồi API Token?",
+                    text: `Bạn có chắc muốn thu hồi và xóa token "${tokenName}"? Mọi bot hoặc client dùng token này sẽ bị từ chối ngay lập tức.`,
+                    confirmButtonText: "Thu hồi & Xóa",
+                    cancelButtonText: "Hủy",
+                    icon: "warning",
+                }).then(async (confirmed) => {
+                    if (!confirmed) return;
+                    try {
+                        const res = await this.fetchJson("/api/admin/tokens.php", {
+                            method: "DELETE",
+                            body: JSON.stringify({ id: Number(tokenId) }),
+                        });
+                        if (res?.success) {
+                            this.showToast("Đã thu hồi token thành công", "success");
+                            const row = document.getElementById(`tokenRow-${tokenId}`);
+                            if (row) row.remove();
+                            const remaining = document.querySelectorAll("#tokensTableBody tr[data-token-id]");
+                            if (remaining.length === 0) {
+                                window.location.reload();
+                            }
+                        } else {
+                            this.showToast(res?.message || "Không thể xóa token", "error");
+                        }
+                    } catch (err) {
+                        this.showToast("Lỗi mạng khi xóa token", "error");
+                    }
+                });
+                return;
+            }
+        });
+
+        // Status switch change (delegated)
+        document.addEventListener("change", async (e) => {
+            const toggle = e.target.closest(".token-status-toggle");
+            if (!toggle) return;
+
+            const tokenId = toggle.getAttribute("data-token-id");
+            if (!tokenId) return;
+
+            const newStatus = toggle.checked ? 1 : 0;
+            toggle.disabled = true;
+
+            try {
+                const res = await this.fetchJson("/api/admin/tokens.php", {
+                    method: "PUT",
+                    body: JSON.stringify({ id: Number(tokenId), status: newStatus }),
+                });
+
+                if (res?.success) {
+                    this.showToast(
+                        newStatus === 1 ? "Đã kích hoạt API Token" : "Đã tạm dừng API Token",
+                        "success"
+                    );
+                } else {
+                    toggle.checked = !toggle.checked;
+                    this.showToast(res?.message || "Không thể cập nhật trạng thái", "error");
+                }
+            } catch (err) {
+                toggle.checked = !toggle.checked;
+                this.showToast("Lỗi kết nối khi đổi trạng thái", "error");
+            } finally {
+                toggle.disabled = false;
+            }
+        });
+
+        // Create token form submit
+        if (addTokenForm) {
+            addTokenForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const btnSubmit = document.getElementById("btnSubmitAddToken");
+                const nameInput = document.getElementById("tokenName");
+                const rateLimitInput = document.getElementById("tokenRateLimit");
+                const expiresDaysInput = document.getElementById("tokenExpiresDays");
+
+                const name = (nameInput?.value || "").trim();
+                const rateLimit = Number(rateLimitInput?.value || 120);
+                const expiresDays = Number(expiresDaysInput?.value || 0);
+
+                if (!name) {
+                    this.showToast("Vui lòng nhập tên định danh cho Token", "error");
+                    return;
+                }
+
+                if (btnSubmit) {
+                    btnSubmit.disabled = true;
+                    btnSubmit.textContent = "Đang tạo...";
+                }
+
+                try {
+                    const res = await this.fetchJson("/api/admin/tokens.php", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            name,
+                            rate_limit_per_min: rateLimit,
+                            expires_days: expiresDays,
+                        }),
+                    });
+
+                    if (res?.success && res.token) {
+                        this.closeModal("addTokenModal");
+                        addTokenForm.reset();
+
+                        const keyIdInput = document.getElementById("createdKeyId");
+                        const secretKeyInput = document.getElementById("createdSecretKey");
+                        if (keyIdInput) keyIdInput.value = res.token.key_id;
+                        if (secretKeyInput) secretKeyInput.value = res.token.secret_key;
+
+                        const btnCopyKeyId = document.getElementById("btnCopyCreatedKeyId");
+                        if (btnCopyKeyId) {
+                            btnCopyKeyId.onclick = () => this.copyToClipboard(res.token.key_id);
+                        }
+
+                        const btnCopySecret = document.getElementById("btnCopyCreatedSecretKey");
+                        if (btnCopySecret) {
+                            btnCopySecret.onclick = () => this.copyToClipboard(res.token.secret_key);
+                        }
+
+                        this.openModal("tokenCreatedModal");
+
+                        const modalEl = document.getElementById("tokenCreatedModal");
+                        if (modalEl) {
+                            const observer = new MutationObserver(() => {
+                                if (modalEl.classList.contains("hidden")) {
+                                    observer.disconnect();
+                                    window.location.reload();
+                                }
+                            });
+                            observer.observe(modalEl, { attributes: true, attributeFilter: ["class"] });
+                        }
+                    } else {
+                        this.showToast(res?.message || "Không thể tạo token", "error");
+                    }
+                } catch (err) {
+                    this.showToast("Lỗi mạng khi tạo token", "error");
+                } finally {
+                    if (btnSubmit) {
+                        btnSubmit.disabled = false;
+                        btnSubmit.textContent = "Tạo Token";
+                    }
+                }
+            });
         }
     }
 

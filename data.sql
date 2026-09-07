@@ -73,6 +73,25 @@ ALTER TABLE messages ADD FULLTEXT INDEX idx_content_search (subject, body_text);
 --   DELETE FROM messages WHERE received_at < NOW() - INTERVAL 48 HOUR;
 
 -- ============================================
+-- TABLE: api_tokens
+-- Description: Quản lý API Token đa người dùng (Multi-tenant)
+-- ============================================
+CREATE TABLE IF NOT EXISTS api_tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    key_id VARCHAR(48) UNIQUE NOT NULL,
+    secret_key VARCHAR(64) NOT NULL,
+    rate_limit_per_min INT DEFAULT 120,
+    total_requests BIGINT DEFAULT 0,
+    last_used_at DATETIME NULL,
+    expires_at DATETIME NULL,
+    status TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_key_id (key_id),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
 -- TABLE: settings
 -- Description: Cấu hình hệ thống toàn cục
 -- ============================================
