@@ -988,6 +988,290 @@ class AdminCore {
         const addTokenForm = document.getElementById("addTokenForm");
         if (!tokensTable && !addTokenForm) return;
 
+        // Parse initial tokens from embedded JSON
+        let tokensList = [];
+        const jsonEl = document.getElementById("initialTokensJson");
+        if (jsonEl && jsonEl.textContent) {
+            try {
+                tokensList = JSON.parse(jsonEl.textContent) || [];
+            } catch (err) {
+                tokensList = [];
+            }
+        }
+
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let currentFilter = "all";
+        let currentSearch = "";
+
+        const updateStatsCounters = () => {
+            const total = tokensList.length;
+            let active = 0;
+            let inactive = 0;
+            let totalRequests = 0;
+            const now = Date.now();
+
+            tokensList.forEach((t) => {
+                const isAct = Number(t.status) === 1;
+                const isExp = t.expires_at && new Date(t.expires_at).getTime() < now;
+                if (isAct && !isExp) {
+                    active++;
+                } else {
+                    inactive++;
+                }
+                totalRequests += Number(t.total_requests || 0);
+            });
+
+            const statTotal = document.getElementById("statTotalTokens");
+            const statActive = document.getElementById("statActiveTokens");
+            const statInactive = document.getElementById("statInactiveTokens");
+            const statReqs = document.getElementById("statTotalRequests");
+            const tabAll = document.getElementById("tabCountAllTokens");
+            const tabAct = document.getElementById("tabCountActiveTokens");
+            const tabInact = document.getElementById("tabCountInactiveTokens");
+
+            if (statTotal) statTotal.textContent = total.toLocaleString();
+            if (statActive) statActive.textContent = active.toLocaleString();
+            if (statInactive) statInactive.textContent = inactive.toLocaleString();
+            if (statReqs) statReqs.textContent = totalRequests.toLocaleString();
+            if (tabAll) tabAll.textContent = total.toLocaleString();
+            if (tabAct) tabAct.textContent = active.toLocaleString();
+            if (tabInact) tabInact.textContent = inactive.toLocaleString();
+        };
+
+        const getFilteredTokens = () => {
+            const query = currentSearch.toLowerCase().trim();
+            const now = Date.now();
+
+            return tokensList.filter((t) => {
+                const isAct = Number(t.status) === 1;
+                const isExp = t.expires_at && new Date(t.expires_at).getTime() < now;
+
+                if (currentFilter === "active" && (!isAct || isExp)) return false;
+                if (currentFilter === "inactive" && isAct && !isExp) return false;
+
+                if (query) {
+                    const name = String(t.name || "").toLowerCase();
+                    const keyId = String(t.key_id || "").toLowerCase();
+                    if (!name.includes(query) && !keyId.includes(query)) return false;
+                }
+                return true;
+            });
+        };
+
+        const renderPagination = (totalPages) => {
+            const pag = document.getElementById("tokensPagination");
+            if (!pag) return;
+
+            if (totalPages <= 1) {
+                pag.innerHTML = "";
+                return;
+            }
+
+            let html = "";
+            if (currentPage > 1) {
+                html += `
+                    <button type="button" class="btn-page-nav" data-page="${currentPage - 1}" title="Trang trước" aria-label="Trang trước">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </button>
+                `;
+            } else {
+                html += `
+                    <button type="button" class="btn-page-nav" disabled title="Trang trước" aria-label="Trang trước">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </button>
+                `;
+            }
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    html += `<button type="button" class="btn-page-num ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<button type="button" class="btn-page-ellipsis" disabled>...</button>`;
+                }
+            }
+
+            if (currentPage < totalPages) {
+                html += `
+                    <button type="button" class="btn-page-nav" data-page="${currentPage + 1}" title="Trang sau" aria-label="Trang sau">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
+                `;
+            } else {
+                html += `
+                    <button type="button" class="btn-page-nav" disabled title="Trang sau" aria-label="Trang sau">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
+                `;
+            }
+
+            pag.innerHTML = html;
+            pag.querySelectorAll("button[data-page]").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    currentPage = Number(btn.getAttribute("data-page") || "1");
+                    renderTable();
+                });
+            });
+        };
+
+        const renderTable = () => {
+            const tbody = document.getElementById("tokensTableBody");
+            if (!tbody) return;
+
+            const filtered = getFilteredTokens();
+            const totalItems = filtered.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIdx = (currentPage - 1) * itemsPerPage;
+            const pageTokens = filtered.slice(startIdx, startIdx + itemsPerPage);
+
+            if (pageTokens.length === 0) {
+                tbody.innerHTML = `
+                    <tr id="emptyTokensRow">
+                        <td colspan="7" style="text-align: center; padding: 48px 16px; color: var(--slate-500);">
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--slate-400)" stroke-width="1.5">
+                                    <path d="M21 2l-2 2m-1.5 1.5L14 9a5 5 0 1 0 3 3l3.5-3.5 2-2zM9 18a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"></path>
+                                </svg>
+                                <p style="font-size: 1rem; font-weight: 500;">${tokensList.length === 0 ? "Chưa có API Token nào được tạo" : "Không tìm thấy Token nào phù hợp"}</p>
+                                ${tokensList.length === 0 ? '<button type="button" class="btn primary btn-sm" data-modal-open="addTokenModal">Tạo Token đầu tiên</button>' : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                const now = Date.now();
+                tbody.innerHTML = pageTokens.map((token) => {
+                    const id = Number(token.id);
+                    const isExp = token.expires_at && new Date(token.expires_at).getTime() < now;
+                    const isAct = Number(token.status) === 1 && !isExp;
+                    const nameEsc = this.escapeHtml(token.name || "");
+                    const keyIdEsc = this.escapeHtml(token.key_id || "");
+                    const secretEsc = this.escapeHtml(token.secret_key || "");
+                    const createdDate = this.formatDateTimeVN(token.created_at || new Date());
+                    const expiresDate = token.expires_at ? this.formatDateVN(token.expires_at) : "";
+                    const lastUsed = token.last_used_at ? this.formatDateTimeVN(token.last_used_at) : "";
+                    const rateLimit = Number(token.rate_limit_per_min || 120);
+                    const totalReqs = Number(token.total_requests || 0).toLocaleString();
+
+                    return `
+                        <tr id="tokenRow-${id}" data-token-id="${id}">
+                            <td>
+                                <span class="table-token-name">${nameEsc}</span>
+                                <span class="table-token-sub">
+                                    Tạo: ${createdDate}
+                                    ${expiresDate ? `<br>Hết hạn: <span style="color: ${isExp ? 'var(--danger)' : 'inherit'}; font-weight: ${isExp ? '600' : 'normal'};">${expiresDate} ${isExp ? '(Đã hết hạn)' : ''}</span>` : ''}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="token-key-display">
+                                    <span class="key-text" title="${keyIdEsc}">${keyIdEsc}</span>
+                                    <button type="button" class="token-icon-btn btn-copy-key" data-copy-value="${keyIdEsc}" title="Sao chép Key ID">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="token-key-display">
+                                    <span class="key-text secret-masked" id="secretText-${id}" data-raw-secret="${secretEsc}">••••••••••••••••••••••••••••</span>
+                                    <button type="button" class="token-icon-btn btn-toggle-secret" data-target="secretText-${id}" title="Hiện/Ẩn Secret Key">
+                                        <svg class="icon-eye" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                        <svg class="icon-eye-off hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                            <line x1="1" y1="1" x2="23" y2="23"></line>
+                                        </svg>
+                                    </button>
+                                    <button type="button" class="token-icon-btn btn-copy-key" data-copy-value="${secretEsc}" title="Sao chép Secret Key">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                            <td style="text-align: center;">
+                                <span class="token-rate-badge">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                    </svg>
+                                    ${rateLimit}/m
+                                </span>
+                            </td>
+                            <td style="text-align: center;">
+                                <span style="font-weight: 600; color: var(--slate-900); font-family: var(--font-mono); font-size: 0.85rem;">
+                                    ${totalReqs}
+                                </span>
+                                ${lastUsed ? `<div style="font-size: 0.72rem; color: var(--slate-500);">${lastUsed}</div>` : ''}
+                            </td>
+                            <td style="text-align: center;">
+                                <label class="ios-switch" title="${isAct ? 'Đang hoạt động' : (isExp ? 'Đã hết hạn' : 'Đang tạm tắt')}">
+                                    <input type="checkbox" class="token-status-toggle" data-token-id="${id}" ${isAct ? 'checked' : ''} ${isExp ? 'disabled' : ''}>
+                                    <span class="ios-switch-slider"></span>
+                                </label>
+                            </td>
+                            <td style="text-align: center;">
+                                <button type="button" class="btn-action-icon btn-delete-token" data-token-id="${id}" data-token-name="${nameEsc}" title="Thu hồi và xóa Token này" style="color: var(--danger);">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join("");
+            }
+
+            renderPagination(totalPages);
+        };
+
+        // Tab filter click
+        document.querySelectorAll("[data-token-filter]").forEach((tab) => {
+            tab.addEventListener("click", () => {
+                const filter = tab.getAttribute("data-token-filter") || "all";
+                if (currentFilter === filter) return;
+                currentFilter = filter;
+                document.querySelectorAll("[data-token-filter]").forEach((t) => {
+                    const active = t === tab;
+                    t.classList.toggle("active", active);
+                    t.setAttribute("aria-selected", active ? "true" : "false");
+                });
+                currentPage = 1;
+                renderTable();
+            });
+        });
+
+        // Search input debounce
+        let searchTimer = null;
+        const searchInput = document.getElementById("tokenSearchInput");
+        if (searchInput) {
+            searchInput.addEventListener("input", () => {
+                if (searchTimer) clearTimeout(searchTimer);
+                searchTimer = setTimeout(() => {
+                    currentSearch = searchInput.value;
+                    currentPage = 1;
+                    renderTable();
+                }, 200);
+            });
+        }
+
         // Copy buttons (delegated)
         document.addEventListener("click", (e) => {
             const btnCopy = e.target.closest(".btn-copy-key");
@@ -1043,19 +1327,22 @@ class AdminCore {
                     if (!confirmed) return;
                     try {
                         const res = await this.fetchJson("/api/admin/tokens.php", {
-                            method: "DELETE",
-                            body: JSON.stringify({ id: Number(tokenId) }),
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-HTTP-Method-Override": "DELETE",
+                            },
+                            body: JSON.stringify({ _method: "DELETE", id: Number(tokenId) }),
                         });
-                        if (res?.success) {
+
+                        if (res?.ok && res?.data?.success) {
                             this.showToast("Đã thu hồi token thành công", "success");
-                            const row = document.getElementById(`tokenRow-${tokenId}`);
-                            if (row) row.remove();
-                            const remaining = document.querySelectorAll("#tokensTableBody tr[data-token-id]");
-                            if (remaining.length === 0) {
-                                window.location.reload();
-                            }
+                            tokensList = tokensList.filter((t) => Number(t.id) !== Number(tokenId));
+                            updateStatsCounters();
+                            renderTable();
                         } else {
-                            this.showToast(res?.message || "Không thể xóa token", "error");
+                            const errMsg = res?.data?.message || res?.data?.error || "Không thể xóa token";
+                            this.showToast(errMsg, "error");
                         }
                     } catch (err) {
                         this.showToast("Lỗi mạng khi xóa token", "error");
@@ -1078,18 +1365,28 @@ class AdminCore {
 
             try {
                 const res = await this.fetchJson("/api/admin/tokens.php", {
-                    method: "PUT",
-                    body: JSON.stringify({ id: Number(tokenId), status: newStatus }),
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-HTTP-Method-Override": "PUT",
+                    },
+                    body: JSON.stringify({ _method: "PUT", id: Number(tokenId), status: newStatus }),
                 });
 
-                if (res?.success) {
+                if (res?.ok && res?.data?.success) {
                     this.showToast(
                         newStatus === 1 ? "Đã kích hoạt API Token" : "Đã tạm dừng API Token",
                         "success"
                     );
+                    const found = tokensList.find((t) => Number(t.id) === Number(tokenId));
+                    if (found) {
+                        found.status = newStatus;
+                    }
+                    updateStatsCounters();
                 } else {
                     toggle.checked = !toggle.checked;
-                    this.showToast(res?.message || "Không thể cập nhật trạng thái", "error");
+                    const errMsg = res?.data?.message || res?.data?.error || "Không thể cập nhật trạng thái";
+                    this.showToast(errMsg, "error");
                 }
             } catch (err) {
                 toggle.checked = !toggle.checked;
@@ -1132,39 +1429,35 @@ class AdminCore {
                         }),
                     });
 
-                    if (res?.success && res.token) {
+                    if (res?.ok && res?.data?.success && res.data.token) {
+                        const createdToken = res.data.token;
                         this.closeModal("addTokenModal");
                         addTokenForm.reset();
 
                         const keyIdInput = document.getElementById("createdKeyId");
                         const secretKeyInput = document.getElementById("createdSecretKey");
-                        if (keyIdInput) keyIdInput.value = res.token.key_id;
-                        if (secretKeyInput) secretKeyInput.value = res.token.secret_key;
+                        if (keyIdInput) keyIdInput.value = createdToken.key_id;
+                        if (secretKeyInput) secretKeyInput.value = createdToken.secret_key;
 
                         const btnCopyKeyId = document.getElementById("btnCopyCreatedKeyId");
                         if (btnCopyKeyId) {
-                            btnCopyKeyId.onclick = () => this.copyToClipboard(res.token.key_id);
+                            btnCopyKeyId.onclick = () => this.copyToClipboard(createdToken.key_id);
                         }
 
                         const btnCopySecret = document.getElementById("btnCopyCreatedSecretKey");
                         if (btnCopySecret) {
-                            btnCopySecret.onclick = () => this.copyToClipboard(res.token.secret_key);
+                            btnCopySecret.onclick = () => this.copyToClipboard(createdToken.secret_key);
                         }
 
                         this.openModal("tokenCreatedModal");
 
-                        const modalEl = document.getElementById("tokenCreatedModal");
-                        if (modalEl) {
-                            const observer = new MutationObserver(() => {
-                                if (modalEl.classList.contains("hidden")) {
-                                    observer.disconnect();
-                                    window.location.reload();
-                                }
-                            });
-                            observer.observe(modalEl, { attributes: true, attributeFilter: ["class"] });
-                        }
+                        // Add to local tokens list and refresh
+                        tokensList.unshift(createdToken);
+                        updateStatsCounters();
+                        renderTable();
                     } else {
-                        this.showToast(res?.message || "Không thể tạo token", "error");
+                        const errMsg = res?.data?.message || res?.data?.error || "Không thể tạo token";
+                        this.showToast(errMsg, "error");
                     }
                 } catch (err) {
                     this.showToast("Lỗi mạng khi tạo token", "error");
@@ -1176,6 +1469,10 @@ class AdminCore {
                 }
             });
         }
+
+        // Initial render
+        renderTable();
+        updateStatsCounters();
     }
 
     bindMobileMenu() {
