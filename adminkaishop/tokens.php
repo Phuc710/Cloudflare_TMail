@@ -163,13 +163,13 @@ AdminLayout::begin('Quản lý API Token', 'tokens', (string) ($admin['username'
     <table class="data-table" id="tokensTable">
         <thead>
             <tr>
-                <th style="width: 22%;">Tên Token &amp; Định danh</th>
-                <th style="width: 22%;">Key ID (Public)</th>
-                <th style="width: 24%;">Secret Key (Bí mật)</th>
-                <th style="width: 10%; text-align: center;">Tần suất</th>
-                <th style="width: 10%; text-align: center;">Lượt gọi</th>
-                <th style="width: 6%; text-align: center;">Trạng thái</th>
-                <th style="width: 6%; text-align: center;">Thao tác</th>
+                <th style="min-width: 170px;">Tên Token &amp; Định danh</th>
+                <th style="min-width: 170px;">Key ID (Public)</th>
+                <th style="min-width: 200px;">Secret Key (Bí mật)</th>
+                <th style="width: 100px; text-align: center; white-space: nowrap;">Tần suất</th>
+                <th style="width: 90px; text-align: center; white-space: nowrap;">Lượt gọi</th>
+                <th class="col-token-status">Trạng thái</th>
+                <th class="col-token-actions">Thao tác</th>
             </tr>
         </thead>
         <tbody id="tokensTableBody">

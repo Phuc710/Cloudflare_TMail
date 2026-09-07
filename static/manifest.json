@@ -1,10 +1,10 @@
 {
     "/css/home.css": "/static/css/home.10b46cb442.min.css",
-    "/css/admin.css": "/static/css/admin.eac7bd8445.min.css",
+    "/css/admin.css": "/static/css/admin.2ef8576e2a.min.css",
     "/css/docs.css": "/static/css/docs.5f7568ba12.min.css",
     "/js/app.js": "/static/js/app.8363d4487c.min.js",
     "/js/longPolling.js": "/static/js/longPolling.8419155615.min.js",
-    "/js/admin.js": "/static/js/admin.2fadcbf8c4.min.js",
+    "/js/admin.js": "/static/js/admin.9eff64fd16.min.js",
     "/js/admin-dashboard.js": "/static/js/admin-dashboard.5d632ab0ff.min.js",
     "/js/admin-login.js": "/static/js/admin-login.741a480e38.min.js"
 }

@@ -1220,19 +1220,23 @@ class AdminCore {
                                 </span>
                                 ${lastUsed ? `<div style="font-size: 0.72rem; color: var(--slate-500);">${lastUsed}</div>` : ''}
                             </td>
-                            <td style="text-align: center;">
-                                <label class="ios-switch" title="${isAct ? 'Đang hoạt động' : (isExp ? 'Đã hết hạn' : 'Đang tạm tắt')}">
-                                    <input type="checkbox" class="token-status-toggle" data-token-id="${id}" ${isAct ? 'checked' : ''} ${isExp ? 'disabled' : ''}>
-                                    <span class="ios-switch-slider"></span>
-                                </label>
+                            <td class="col-token-status">
+                                <div class="token-status-wrapper">
+                                    <label class="ios-switch" title="${isAct ? 'Đang hoạt động' : (isExp ? 'Đã hết hạn' : 'Đang tạm tắt')}">
+                                        <input type="checkbox" class="token-status-toggle" data-token-id="${id}" ${isAct ? 'checked' : ''} ${isExp ? 'disabled' : ''}>
+                                        <span class="ios-switch-slider"></span>
+                                    </label>
+                                </div>
                             </td>
-                            <td style="text-align: center;">
-                                <button type="button" class="btn-action-icon btn-delete-token" data-token-id="${id}" data-token-name="${nameEsc}" title="Thu hồi và xóa Token này" style="color: var(--danger);">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <polyline points="3 6 5 6 21 6"></polyline>
-                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                    </svg>
-                                </button>
+                            <td class="col-token-actions">
+                                <div class="token-action-wrapper">
+                                    <button type="button" class="btn-action-icon btn-delete-token" data-token-id="${id}" data-token-name="${nameEsc}" title="Thu hồi và xóa Token này" style="color: var(--danger);">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                        </svg>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     `;
