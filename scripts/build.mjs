@@ -89,6 +89,7 @@ async function minifyJs(js, filename) {
 const cssTargets = {
   '/css/home.css': path.join(rootDir, 'css', 'home.css'),
   '/css/admin.css': path.join(rootDir, 'css', 'admin.css'),
+  '/css/docs.css': path.join(rootDir, 'css', 'docs.css'),
 };
 
 const jsTargets = {
