@@ -102,6 +102,14 @@ AdminLayout::begin('API Integration Docs', 'docs-api', $adminName);
             </div>
         </div>
 
+        <div style="margin-top: 16px; background: #f0fdf4; border: 1.5px dashed #86efac; border-radius: 12px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+            <div>
+                <strong style="color: #166534; font-size: 0.95rem; display: block; margin-bottom: 4px;">🚀 Cần cấp phát Token riêng cho từng Bot hoặc Khách hàng?</strong>
+                <span style="color: #15803d; font-size: 0.85rem;">Bạn có thể tạo không giới hạn API Token đa người dùng (Multi-tenant) với giới hạn Rate Limit &amp; thời hạn sử dụng độc lập mà không cần chia sẻ Root Keys.</span>
+            </div>
+            <a href="/adminkaishop/tokens" class="btn primary btn-sm" style="flex-shrink: 0;">Quản lý API Token &rarr;</a>
+        </div>
+
         <!-- SECTION: AUTH HEADERS & HMAC SPECIFICATION -->
         <h2 class="docs-section-title">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
