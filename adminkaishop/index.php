@@ -38,14 +38,14 @@ AdminLayout::begin('Quản lý email', 'emails', (string) ($admin['username'] ??
             </svg>
             <span>Fast Checker</span>
         </button>
-        <button id="addDomainBtn" class="btn secondary" type="button" data-modal-open="addDomainModal">
+        <a href="<?= htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8') ?>/adminkaishop/managerdomain" id="addDomainBtn" class="btn secondary">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"></circle>
                 <line x1="2" y1="12" x2="22" y2="12"></line>
                 <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"></path>
             </svg>
             <span>Quản lý domain</span>
-        </button>
+        </a>
         <button id="createEmailBtn" class="btn primary" type="button" data-modal-open="createModal">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="12" y1="5" x2="12" y2="19"></line>

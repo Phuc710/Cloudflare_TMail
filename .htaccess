@@ -53,6 +53,7 @@ RewriteRule ^user_docs/?$ user_docs/index.php [L]
 # Admin routes - Clean URLs
 RewriteRule ^adminkaishop/login/?$ adminkaishop/login.php [L]
 RewriteRule ^adminkaishop/emails/?$ adminkaishop/emails.php [L]
+RewriteRule ^adminkaishop/managerdomain/?$ adminkaishop/managerdomain.php [L]
 RewriteRule ^adminkaishop/expired/?$ adminkaishop/expired.php [L]
 RewriteRule ^adminkaishop/tokens/?$ adminkaishop/tokens.php [L]
 RewriteRule ^adminkaishop/docs-domain/?$ adminkaishop/docs-domain.php [L]

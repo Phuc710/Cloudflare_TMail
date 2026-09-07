@@ -3421,8 +3421,8 @@ input[type="checkbox"] {
 }
 
 #tokensTable .col-token-actions {
-    width: 80px;
-    min-width: 70px;
+    width: 120px;
+    min-width: 115px;
     text-align: center !important;
     white-space: nowrap !important;
 }
@@ -3433,4 +3433,140 @@ input[type="checkbox"] {
     align-items: center;
     justify-content: center;
     width: 100%;
+}
+
+/* Domains Table Layout & Alignment */
+#domainsTable {
+    width: 100%;
+    min-width: 800px;
+    table-layout: fixed;
+}
+
+#domainsTable th,
+#domainsTable td {
+    vertical-align: middle;
+}
+
+#domainsTable .col-domain-name {
+    width: auto;
+    min-width: 200px;
+}
+
+#domainsTable .col-domain-status {
+    width: 140px;
+    min-width: 120px;
+    text-align: center !important;
+    white-space: nowrap !important;
+}
+
+#domainsTable .col-domain-emails {
+    width: 130px;
+    min-width: 110px;
+    text-align: center !important;
+    white-space: nowrap !important;
+}
+
+#domainsTable .col-domain-date {
+    width: 200px;
+    min-width: 185px;
+    white-space: nowrap !important;
+    color: var(--slate-600);
+    font-size: 0.88rem;
+    font-variant-numeric: tabular-nums;
+}
+
+#domainsTable .col-domain-actions {
+    width: 90px;
+    min-width: 80px;
+    text-align: center !important;
+    white-space: nowrap !important;
+}
+
+.btn-copy-key svg,
+.btn-copy-key path,
+.btn-copy-key rect {
+    pointer-events: none;
+}
+
+.token-icon-btn.copied {
+    color: var(--primary) !important;
+    background: var(--primary-light) !important;
+    transform: scale(1.15);
+}
+
+.domain-email-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    font-size: 0.82rem;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+    white-space: nowrap;
+}
+
+.is-inactive-row {
+    opacity: 0.72;
+    background-color: #fafafa;
+}
+
+.table-domain-name {
+    font-weight: 600;
+    color: var(--slate-900);
+    display: block;
+}
+
+.table-domain-sub {
+    font-size: 0.78rem;
+    color: var(--slate-500);
+}
+
+.domain-status-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.domain-status-badge {
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.domain-status-badge.active {
+    color: #059669;
+}
+
+.domain-status-badge.inactive {
+    color: #94a3b8;
+}
+
+.domain-email-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.domain-email-pill.has-emails {
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+}
+
+.domain-email-pill.zero-emails {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+.domain-name-tag {
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    color: var(--slate-900);
 }

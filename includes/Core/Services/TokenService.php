@@ -165,6 +165,106 @@ final class TokenService
     }
 
     /**
+     * Update token details (name, rate_limit_per_min, expires_at, status).
+     *
+     * @param int $id
+     * @param array<string, mixed> $data
+     * @return array Updated token record
+     */
+    public function update(int $id, array $data): array
+    {
+        $token = $this->find($id);
+        if ($token === null) {
+            throw ApiException::notFound('Không tìm thấy token');
+        }
+
+        $fields = [];
+        $params = [];
+
+        if (isset($data['name'])) {
+            $name = trim((string) $data['name']);
+            if ($name === '') {
+                throw ApiException::badRequest('Tên token không được để trống');
+            }
+            if (mb_strlen($name) > 100) {
+                throw ApiException::badRequest('Tên token tối đa 100 ký tự');
+            }
+            $fields[] = '`name` = ?';
+            $params[] = $name;
+        }
+
+        if (isset($data['rate_limit_per_min'])) {
+            $rateLimit = (int) $data['rate_limit_per_min'];
+            if ($rateLimit <= 0) {
+                $rateLimit = 120;
+            }
+            $fields[] = '`rate_limit_per_min` = ?';
+            $params[] = $rateLimit;
+        }
+
+        if (array_key_exists('expires_at', $data)) {
+            $expiresAt = $data['expires_at'];
+            if ($expiresAt === null || trim((string) $expiresAt) === '' || $expiresAt === 'never') {
+                $fields[] = '`expires_at` = NULL';
+            } else {
+                $ts = strtotime((string) $expiresAt);
+                if ($ts === false || $ts < time()) {
+                    throw ApiException::badRequest('Thời gian hết hạn không hợp lệ hoặc đã qua');
+                }
+                $fields[] = '`expires_at` = ?';
+                $params[] = date('Y-m-d H:i:s', $ts);
+            }
+        }
+
+        if (isset($data['status'])) {
+            $status = (int) $data['status'] === 1 ? 1 : 0;
+            $fields[] = '`status` = ?';
+            $params[] = $status;
+        }
+
+        if (empty($fields)) {
+            return $token;
+        }
+
+        $params[] = $id;
+        $sql = "UPDATE api_tokens SET " . implode(', ', $fields) . " WHERE id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        $updated = $this->find($id);
+        if ($updated === null) {
+            throw ApiException::internal('Không thể nạp thông tin token sau cập nhật');
+        }
+
+        return $updated;
+    }
+
+    /**
+     * Regenerate / Rotate Secret Key for a token.
+     *
+     * @param int $id
+     * @return array Updated token record with newly generated secret_key
+     */
+    public function regenerateSecret(int $id): array
+    {
+        $token = $this->find($id);
+        if ($token === null) {
+            throw ApiException::notFound('Không tìm thấy token');
+        }
+
+        $newSecret = 'km_sec_' . bin2hex(random_bytes(24));
+        $stmt = $this->db->prepare("UPDATE api_tokens SET secret_key = ? WHERE id = ?");
+        $stmt->execute([$newSecret, $id]);
+
+        $updated = $this->find($id);
+        if ($updated === null) {
+            throw ApiException::internal('Không thể nạp thông tin token sau khi tạo lại secret');
+        }
+
+        return $updated;
+    }
+
+    /**
      * Revoke / Delete a token permanently.
      */
     public function delete(int $id): bool

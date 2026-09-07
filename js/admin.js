@@ -3,7 +3,16 @@
  */
 class AdminCore {
     constructor(baseUrl) {
-        this.baseUrl = (baseUrl || "").replace(/\/+$/, "");
+        let detected = (baseUrl || "").replace(/\/+$/, "");
+        const pathname = window.location.pathname;
+        const match = pathname.match(/^(.*?)\/adminkaishop/i);
+        if (match && match[1] !== undefined) {
+            detected = window.location.origin + match[1];
+        } else if (!detected || !detected.startsWith(window.location.origin)) {
+            detected = window.location.origin;
+        }
+
+        this.baseUrl = detected.replace(/\/+$/, "");
         this.toastTimer = null;
         this.activeModalCount = 0;
         this.adminKeyStorage = "kaimail_admin_access_key";
@@ -22,6 +31,8 @@ class AdminCore {
         this.bindAddDomainForm();
         this.bindDomainManagement();
         this.bindTokenManagement();
+        this.bindDomainPageManagement();
+        this.bindGlobalCopyButtons();
         this.bindMobileMenu();
     }
 
@@ -52,29 +63,17 @@ class AdminCore {
         try {
             const response = await fetch(this.buildUrl("/api/admin/auth.php"), {
                 method: "GET",
+                credentials: "same-origin",
             });
 
-            if (!response.ok) {
-                if (response.status === 401) {
-                    window.location.href = this.buildUrl("/adminkaishop/login");
-                    return false;
-                }
-
-                let data = null;
-                try {
-                    data = await response.json();
-                } catch (error) {
-                    data = null;
-                }
-
-                const message = data?.message || data?.error || "Không thể xác thực phiên admin";
-                this.showToast(message, "error");
+            if (response.status === 401) {
+                window.location.href = this.buildUrl("/adminkaishop/login");
                 return false;
             }
 
             return true;
         } catch (error) {
-            // Lỗi mạng tạm thời: giữ nguyên trang để người dùng thử lại.
+            // Lỗi mạng hoặc dev server: không chặn UI để các thao tác offline/local vẫn chạy
             return true;
         }
     }
@@ -223,19 +222,36 @@ class AdminCore {
         const safeText = String(text || "");
         if (!safeText) return;
 
-        try {
-            await navigator.clipboard.writeText(safeText);
-            this.showToast("Đã sao chép vào clipboard", "success");
-            return;
-        } catch (error) {
-            const input = document.createElement("input");
-            input.value = safeText;
-            document.body.appendChild(input);
-            input.select();
-            document.execCommand("copy");
-            document.body.removeChild(input);
-            this.showToast("Đã sao chép vào clipboard", "success");
+        let success = false;
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+            try {
+                await navigator.clipboard.writeText(safeText);
+                success = true;
+            } catch (err) {
+                success = false;
+            }
         }
+
+        if (!success) {
+            try {
+                const textarea = document.createElement("textarea");
+                textarea.value = safeText;
+                textarea.setAttribute("readonly", "");
+                textarea.style.position = "fixed";
+                textarea.style.left = "-9999px";
+                textarea.style.top = "-9999px";
+                textarea.style.opacity = "0";
+                document.body.appendChild(textarea);
+                textarea.select();
+                textarea.setSelectionRange(0, safeText.length);
+                success = document.execCommand("copy");
+                document.body.removeChild(textarea);
+            } catch (err) {
+                console.warn("execCommand fallback failed:", err);
+            }
+        }
+
+        this.showToast(`Đã sao chép: ${safeText}`, "success");
     }
 
     parseDateInput(dateValue) {
@@ -602,6 +618,18 @@ class AdminCore {
 
                 this.showToast(`Đã thêm domain "${domainName}" thành công`, "success");
                 form.reset();
+                this.closeModal("addDomainModal");
+
+                // Broadcast domain addition for reactive page updates
+                window.dispatchEvent(new CustomEvent("domain-added", {
+                    detail: {
+                        id: data?.id,
+                        domain: domainName,
+                        is_active: isActive,
+                        created_at: new Date().toISOString(),
+                        email_count: 0,
+                    },
+                }));
 
                 // Cập nhật lại danh sách domain trong modal mượt mà
                 await this.refreshDomainList();
@@ -1003,6 +1031,7 @@ class AdminCore {
         const itemsPerPage = 10;
         let currentFilter = "all";
         let currentSearch = "";
+        let currentRegenTokenId = null;
 
         const updateStatsCounters = () => {
             const total = tokensList.length;
@@ -1013,7 +1042,8 @@ class AdminCore {
 
             tokensList.forEach((t) => {
                 const isAct = Number(t.status) === 1;
-                const isExp = t.expires_at && new Date(t.expires_at).getTime() < now;
+                const expDate = this.parseDateInput(t.expires_at);
+                const isExp = expDate ? expDate.getTime() < now : false;
                 if (isAct && !isExp) {
                     active++;
                 } else {
@@ -1045,7 +1075,8 @@ class AdminCore {
 
             return tokensList.filter((t) => {
                 const isAct = Number(t.status) === 1;
-                const isExp = t.expires_at && new Date(t.expires_at).getTime() < now;
+                const expDate = this.parseDateInput(t.expires_at);
+                const isExp = expDate ? expDate.getTime() < now : false;
 
                 if (currentFilter === "active" && (!isAct || isExp)) return false;
                 if (currentFilter === "inactive" && isAct && !isExp) return false;
@@ -1154,7 +1185,8 @@ class AdminCore {
                 const now = Date.now();
                 tbody.innerHTML = pageTokens.map((token) => {
                     const id = Number(token.id);
-                    const isExp = token.expires_at && new Date(token.expires_at).getTime() < now;
+                    const expDate = this.parseDateInput(token.expires_at);
+                    const isExp = expDate ? expDate.getTime() < now : false;
                     const isAct = Number(token.status) === 1 && !isExp;
                     const nameEsc = this.escapeHtml(token.name || "");
                     const keyIdEsc = this.escapeHtml(token.key_id || "");
@@ -1230,6 +1262,19 @@ class AdminCore {
                             </td>
                             <td class="col-token-actions">
                                 <div class="token-action-wrapper">
+                                    <button type="button" class="btn-icon btn-edit-token" data-token-id="${id}" title="Chỉnh sửa Token (Tên, Rate limit, Thời hạn)">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                    </button>
+                                    <button type="button" class="btn-icon warning btn-regenerate-secret" data-token-id="${id}" data-token-name="${nameEsc}" data-key-id="${keyIdEsc}" title="Cấp lại Secret Key mới (Xoay key)">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M23 4v6h-6"></path>
+                                            <path d="M1 20v-6h6"></path>
+                                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                                        </svg>
+                                    </button>
                                     <button type="button" class="btn-icon danger btn-delete-token" data-token-id="${id}" data-token-name="${nameEsc}" title="Thu hồi và xóa Token này">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <polyline points="3 6 5 6 21 6"></polyline>
@@ -1276,17 +1321,8 @@ class AdminCore {
             });
         }
 
-        // Copy buttons (delegated)
+        // Delegated clicks for token actions (reveal secret, edit, regenerate, delete)
         document.addEventListener("click", (e) => {
-            const btnCopy = e.target.closest(".btn-copy-key");
-            if (btnCopy) {
-                const val = btnCopy.getAttribute("data-copy-value");
-                if (val) {
-                    this.copyToClipboard(val);
-                }
-                return;
-            }
-
             // Reveal/Hide Secret Key (delegated)
             const btnToggle = e.target.closest(".btn-toggle-secret");
             if (btnToggle) {
@@ -1311,6 +1347,64 @@ class AdminCore {
                     if (iconEye) iconEye.classList.remove("hidden");
                     if (iconEyeOff) iconEyeOff.classList.add("hidden");
                 }
+                return;
+            }
+
+            // Edit token button (delegated)
+            const btnEdit = e.target.closest(".btn-edit-token");
+            if (btnEdit) {
+                const tokenId = Number(btnEdit.getAttribute("data-token-id"));
+                const token = tokensList.find((t) => Number(t.id) === tokenId);
+                if (!token) return;
+
+                const editIdInput = document.getElementById("editTokenId");
+                const editKeyDisplay = document.getElementById("editTokenKeyIdDisplay");
+                const editNameInput = document.getElementById("editTokenName");
+                const editRateLimitInput = document.getElementById("editTokenRateLimit");
+                const editExpiresDaysSelect = document.getElementById("editTokenExpiresDays");
+                const editStatusSelect = document.getElementById("editTokenStatus");
+                const expiryNote = document.getElementById("editTokenCurrentExpiryNote");
+
+                if (editIdInput) editIdInput.value = token.id;
+                if (editKeyDisplay) editKeyDisplay.value = token.key_id;
+                if (editNameInput) editNameInput.value = token.name || "";
+                if (editRateLimitInput) editRateLimitInput.value = token.rate_limit_per_min || 120;
+                if (editExpiresDaysSelect) editExpiresDaysSelect.value = "keep";
+                if (editStatusSelect) editStatusSelect.value = String(token.status ?? 1);
+
+                if (expiryNote) {
+                    if (token.expires_at) {
+                        const expDate = this.parseDateInput(token.expires_at);
+                        const isExpired = expDate ? expDate.getTime() < Date.now() : false;
+                        expiryNote.innerHTML = `Thời hạn hiện tại: <strong>${this.formatDateVN(token.expires_at)}</strong> ${isExpired ? '<span style="color: var(--danger); font-weight: 600;">(Đã hết hạn)</span>' : ''}`;
+                    } else {
+                        expiryNote.innerHTML = `Thời hạn hiện tại: <strong>Không giới hạn (Vĩnh viễn)</strong>`;
+                    }
+                }
+
+                this.openModal("editTokenModal");
+                return;
+            }
+
+            // Regenerate Secret button (delegated)
+            const btnRegen = e.target.closest(".btn-regenerate-secret");
+            if (btnRegen) {
+                const tokenId = Number(btnRegen.getAttribute("data-token-id"));
+                const token = tokensList.find((t) => Number(t.id) === tokenId);
+                if (!token) return;
+
+                currentRegenTokenId = tokenId;
+                const regenName = document.getElementById("regenTokenName");
+                const regenKey = document.getElementById("regenTokenKeyId");
+                const confirmPane = document.getElementById("regenConfirmPane");
+                const successPane = document.getElementById("regenSuccessPane");
+
+                if (regenName) regenName.textContent = token.name || "API Token";
+                if (regenKey) regenKey.textContent = `Key ID: ${token.key_id}`;
+                if (confirmPane) confirmPane.classList.remove("hidden");
+                if (successPane) successPane.classList.add("hidden");
+
+                this.openModal("regenerateSecretModal");
                 return;
             }
 
@@ -1474,9 +1568,524 @@ class AdminCore {
             });
         }
 
+        // Edit token form submit
+        const editTokenForm = document.getElementById("editTokenForm");
+        if (editTokenForm) {
+            editTokenForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const btnSubmit = document.getElementById("btnSubmitEditToken");
+                const idInput = document.getElementById("editTokenId");
+                const nameInput = document.getElementById("editTokenName");
+                const rateLimitInput = document.getElementById("editTokenRateLimit");
+                const expiresDaysSelect = document.getElementById("editTokenExpiresDays");
+                const statusSelect = document.getElementById("editTokenStatus");
+
+                const id = Number(idInput?.value || 0);
+                const name = (nameInput?.value || "").trim();
+                const rateLimit = Number(rateLimitInput?.value || 120);
+                const expiresDaysVal = expiresDaysSelect?.value || "keep";
+                const status = Number(statusSelect?.value || 1);
+
+                if (!id || !name) {
+                    this.showToast("Vui lòng nhập tên định danh cho Token", "error");
+                    return;
+                }
+
+                if (btnSubmit) {
+                    btnSubmit.disabled = true;
+                    btnSubmit.textContent = "Đang lưu...";
+                }
+
+                const payload = {
+                    action: "update",
+                    id,
+                    name,
+                    rate_limit_per_min: rateLimit,
+                    status,
+                };
+
+                if (expiresDaysVal === "never") {
+                    payload.expires_days = 0;
+                    payload.expires_at = null;
+                } else if (expiresDaysVal !== "keep") {
+                    payload.expires_days = Number(expiresDaysVal);
+                }
+
+                try {
+                    const res = await this.fetchJson("/api/admin/tokens.php", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-HTTP-Method-Override": "PUT",
+                        },
+                        body: JSON.stringify(payload),
+                    });
+
+                    if (res?.ok && res?.data?.success && res.data.token) {
+                        const updated = res.data.token;
+                        this.closeModal("editTokenModal");
+                        this.showToast("Đã cập nhật Token thành công", "success");
+
+                        const idx = tokensList.findIndex((t) => Number(t.id) === id);
+                        if (idx !== -1) {
+                            tokensList[idx] = updated;
+                        }
+                        updateStatsCounters();
+                        renderTable();
+                    } else {
+                        const errMsg = res?.data?.message || res?.data?.error || "Không thể cập nhật Token";
+                        this.showToast(errMsg, "error");
+                    }
+                } catch (err) {
+                    this.showToast("Lỗi kết nối khi cập nhật Token", "error");
+                } finally {
+                    if (btnSubmit) {
+                        btnSubmit.disabled = false;
+                        btnSubmit.textContent = "Lưu thay đổi";
+                    }
+                }
+            });
+        }
+
+        // Confirm Regenerate Secret button
+        const btnConfirmRegen = document.getElementById("btnConfirmRegenerateSecret");
+        if (btnConfirmRegen) {
+            btnConfirmRegen.addEventListener("click", async () => {
+                if (!currentRegenTokenId) return;
+
+                btnConfirmRegen.disabled = true;
+                btnConfirmRegen.textContent = "Đang cấp lại...";
+
+                try {
+                    const res = await this.fetchJson("/api/admin/tokens.php", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-HTTP-Method-Override": "PUT",
+                        },
+                        body: JSON.stringify({
+                            action: "regenerate_secret",
+                            id: currentRegenTokenId,
+                        }),
+                    });
+
+                    if (res?.ok && res?.data?.success && res.data.token) {
+                        const updated = res.data.token;
+                        const idx = tokensList.findIndex((t) => Number(t.id) === currentRegenTokenId);
+                        if (idx !== -1) {
+                            tokensList[idx] = updated;
+                        }
+
+                        const confirmPane = document.getElementById("regenConfirmPane");
+                        const successPane = document.getElementById("regenSuccessPane");
+                        const secretInput = document.getElementById("newRegeneratedSecretKey");
+                        const copyBtn = document.getElementById("btnCopyRegeneratedSecret");
+
+                        if (secretInput) secretInput.value = updated.secret_key;
+                        if (copyBtn) {
+                            copyBtn.onclick = () => this.copyToClipboard(updated.secret_key);
+                        }
+
+                        if (confirmPane) confirmPane.classList.add("hidden");
+                        if (successPane) successPane.classList.remove("hidden");
+
+                        this.showToast("Đã cấp lại Secret Key mới thành công", "success");
+                        renderTable();
+                    } else {
+                        const errMsg = res?.data?.message || res?.data?.error || "Không thể cấp lại Secret Key";
+                        this.showToast(errMsg, "error");
+                    }
+                } catch (err) {
+                    this.showToast("Lỗi kết nối khi cấp lại Secret Key", "error");
+                } finally {
+                    btnConfirmRegen.disabled = false;
+                    btnConfirmRegen.textContent = "Xác nhận tạo Key mới";
+                }
+            });
+        }
+
         // Initial render
         renderTable();
         updateStatsCounters();
+    }
+
+    bindDomainPageManagement() {
+        const domainsTable = document.getElementById("domainsTable");
+        if (!domainsTable) return;
+
+        // Parse initial domains from embedded JSON
+        let domainsList = [];
+        const jsonEl = document.getElementById("initialDomainsJson");
+        if (jsonEl && jsonEl.textContent) {
+            try {
+                domainsList = JSON.parse(jsonEl.textContent) || [];
+            } catch (err) {
+                domainsList = [];
+            }
+        }
+
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let currentFilter = "all";
+        let currentSearch = "";
+
+        const updateStatsCounters = () => {
+            const total = domainsList.length;
+            let active = 0;
+            let inactive = 0;
+            let totalEmails = 0;
+
+            domainsList.forEach((d) => {
+                const isAct = Number(d.is_active) === 1;
+                if (isAct) {
+                    active++;
+                } else {
+                    inactive++;
+                }
+                totalEmails += Number(d.email_count || 0);
+            });
+
+            const statTotal = document.getElementById("statTotalDomains");
+            const statActive = document.getElementById("statActiveDomains");
+            const statInactive = document.getElementById("statInactiveDomains");
+            const statEmails = document.getElementById("statTotalEmailsLinked");
+            const tabAll = document.getElementById("tabCountAllDomains");
+            const tabAct = document.getElementById("tabCountActiveDomains");
+            const tabInact = document.getElementById("tabCountInactiveDomains");
+
+            if (statTotal) statTotal.textContent = total.toLocaleString();
+            if (statActive) statActive.textContent = active.toLocaleString();
+            if (statInactive) statInactive.textContent = inactive.toLocaleString();
+            if (statEmails) statEmails.textContent = totalEmails.toLocaleString();
+            if (tabAll) tabAll.textContent = total.toLocaleString();
+            if (tabAct) tabAct.textContent = active.toLocaleString();
+            if (tabInact) tabInact.textContent = inactive.toLocaleString();
+        };
+
+        const getFilteredDomains = () => {
+            const query = currentSearch.toLowerCase().trim();
+
+            return domainsList.filter((d) => {
+                const isAct = Number(d.is_active) === 1;
+
+                if (currentFilter === "active" && !isAct) return false;
+                if (currentFilter === "inactive" && isAct) return false;
+
+                if (query) {
+                    const domainName = String(d.domain || "").toLowerCase();
+                    if (!domainName.includes(query)) return false;
+                }
+                return true;
+            });
+        };
+
+        const renderPagination = (totalPages) => {
+            const pag = document.getElementById("domainsPagination");
+            if (!pag) return;
+
+            if (totalPages <= 1) {
+                pag.innerHTML = "";
+                return;
+            }
+
+            let html = "";
+            if (currentPage > 1) {
+                html += `
+                    <button type="button" class="btn-page-nav" data-page="${currentPage - 1}" title="Trang trước" aria-label="Trang trước">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </button>
+                `;
+            } else {
+                html += `
+                    <button type="button" class="btn-page-nav" disabled title="Trang trước" aria-label="Trang trước">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </button>
+                `;
+            }
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    html += `<button type="button" class="btn-page-num ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<button type="button" class="btn-page-ellipsis" disabled>...</button>`;
+                }
+            }
+
+            if (currentPage < totalPages) {
+                html += `
+                    <button type="button" class="btn-page-nav" data-page="${currentPage + 1}" title="Trang sau" aria-label="Trang sau">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
+                `;
+            } else {
+                html += `
+                    <button type="button" class="btn-page-nav" disabled title="Trang sau" aria-label="Trang sau">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
+                `;
+            }
+
+            pag.innerHTML = html;
+            pag.querySelectorAll("button[data-page]").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    currentPage = Number(btn.getAttribute("data-page") || "1");
+                    renderTable();
+                });
+            });
+        };
+
+        const renderTable = () => {
+            const tbody = document.getElementById("domainsTableBody");
+            if (!tbody) return;
+
+            const filtered = getFilteredDomains();
+            const totalItems = filtered.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIdx = (currentPage - 1) * itemsPerPage;
+            const pageDomains = filtered.slice(startIdx, startIdx + itemsPerPage);
+
+            if (pageDomains.length === 0) {
+                tbody.innerHTML = `
+                    <tr id="emptyDomainsRow">
+                        <td colspan="5" style="text-align: center; padding: 48px 16px; color: var(--slate-500);">
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--slate-400)" stroke-width="1.5">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10z"></path>
+                                </svg>
+                                <p style="font-size: 1rem; font-weight: 500;">${domainsList.length === 0 ? "Chưa có tên miền nào trong hệ thống" : "Không tìm thấy tên miền nào phù hợp"}</p>
+                                ${domainsList.length === 0 ? '<button type="button" class="btn primary btn-sm" data-modal-open="addDomainModal">Thêm tên miền đầu tiên</button>' : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                tbody.innerHTML = pageDomains.map((domain) => {
+                    const id = Number(domain.id);
+                    const domName = String(domain.domain || "");
+                    const domNameEsc = this.escapeHtml(domName);
+                    const isAct = Number(domain.is_active) === 1;
+                    const emailCount = Number(domain.email_count || 0);
+                    const createdDate = domain.created_at ? this.formatDateTimeVN(domain.created_at) : "Hệ thống";
+
+                    return `
+                        <tr id="domainRow_${id}" data-domain-id="${id}" class="${isAct ? '' : 'is-inactive-row'}">
+                            <td class="col-domain-name">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <strong class="domain-name-tag"><code>@${domNameEsc}</code></strong>
+                                    <button type="button" class="token-icon-btn btn-copy-key" data-copy-value="${domNameEsc}" title="Sao chép tên domain">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                            <td class="col-domain-status" style="text-align: center;">
+                                <div style="display: flex; align-items: center; justify-content: center;">
+                                    <label class="ios-switch" title="${isAct ? 'Bấm để tắt domain này' : 'Bấm để bật domain này'}">
+                                        <input type="checkbox" class="domain-toggle-switch domain-page-status-toggle" data-domain-id="${id}" data-domain-name="${domNameEsc}" ${isAct ? 'checked' : ''}>
+                                        <span class="ios-switch-slider"></span>
+                                    </label>
+                                </div>
+                            </td>
+                            <td class="col-domain-emails" style="text-align: center;">
+                                <span class="domain-email-pill ${emailCount > 0 ? 'has-emails' : 'zero-emails'}">
+                                    ${emailCount} email
+                                </span>
+                            </td>
+                            <td class="col-domain-date" style="white-space: nowrap;">${domain.created_at || '2026-09-07 00:00:00'}</td>
+                            <td class="col-domain-actions" style="text-align: center;">
+                                <button type="button" class="btn danger btn-sm domain-delete-btn btn-delete-domain-row" data-domain-delete="${id}" data-domain-id="${id}" data-domain-name="${domNameEsc}" data-email-count="${emailCount}" title="${emailCount > 0 ? 'Không thể xóa: đang có ' + emailCount + ' email liên kết' : 'Xóa domain này'}">
+                                    Xóa
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join("");
+            }
+
+            renderPagination(totalPages);
+        };
+
+        // Tab filter click
+        document.querySelectorAll("[data-domain-filter]").forEach((tab) => {
+            tab.addEventListener("click", () => {
+                const filter = tab.getAttribute("data-domain-filter") || "all";
+                if (currentFilter === filter) return;
+                currentFilter = filter;
+                document.querySelectorAll("[data-domain-filter]").forEach((t) => {
+                    const active = t === tab;
+                    t.classList.toggle("active", active);
+                    t.setAttribute("aria-selected", active ? "true" : "false");
+                });
+                currentPage = 1;
+                renderTable();
+            });
+        });
+
+        // Search input debounce
+        let searchTimer = null;
+        const searchInput = document.getElementById("domainSearchInput");
+        if (searchInput) {
+            searchInput.addEventListener("input", () => {
+                if (searchTimer) clearTimeout(searchTimer);
+                searchTimer = setTimeout(() => {
+                    currentSearch = searchInput.value;
+                    currentPage = 1;
+                    renderTable();
+                }, 200);
+            });
+        }
+
+        // Status switch change on manager domain table
+        document.addEventListener("change", async (e) => {
+            const toggle = e.target.closest(".domain-page-status-toggle");
+            if (!toggle) return;
+
+            const domainId = Number(toggle.getAttribute("data-domain-id") || "0");
+            const domainName = toggle.getAttribute("data-domain-name") || "";
+            if (!domainId) return;
+
+            const newStatus = toggle.checked ? 1 : 0;
+            toggle.disabled = true;
+
+            try {
+                const res = await this.fetchJson("/api/admin/domains.php", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-HTTP-Method-Override": "PUT",
+                    },
+                    body: JSON.stringify({ _method: "PUT", id: domainId, is_active: newStatus }),
+                });
+
+                if (res?.ok && res?.data?.success) {
+                    this.showToast(
+                        newStatus === 1 ? `Đã kích hoạt domain "${domainName}"` : `Đã tạm tắt domain "${domainName}"`,
+                        "success"
+                    );
+                    const found = domainsList.find((d) => Number(d.id) === domainId);
+                    if (found) {
+                        found.is_active = newStatus;
+                    }
+                    const row = document.getElementById(`domainRow_${domainId}`) || document.getElementById(`domainRow-${domainId}`);
+                    if (row) {
+                        row.classList.toggle("is-inactive-row", newStatus === 0);
+                    }
+                    updateStatsCounters();
+                } else {
+                    toggle.checked = !toggle.checked;
+                    const errMsg = res?.data?.message || res?.data?.error || "Không thể cập nhật trạng thái domain";
+                    this.showToast(errMsg, "error");
+                }
+            } catch (err) {
+                toggle.checked = !toggle.checked;
+                this.showToast("Lỗi kết nối khi đổi trạng thái", "error");
+            } finally {
+                toggle.disabled = false;
+            }
+        });
+
+        // Delete domain button from table
+        document.addEventListener("click", async (e) => {
+            const btnDelete = e.target.closest(".btn-delete-domain-row");
+            if (!btnDelete) return;
+
+            const domainId = Number(btnDelete.getAttribute("data-domain-id") || "0");
+            const domainName = btnDelete.getAttribute("data-domain-name") || "domain";
+            const emailCount = Number(btnDelete.getAttribute("data-email-count") || "0");
+            if (!domainId) return;
+
+            if (emailCount > 0) {
+                this.showToast(`Không thể xóa domain "${domainName}" vì đang có ${emailCount} email liên kết. Vui lòng xóa email trước!`, "warning");
+                return;
+            }
+
+            const confirmed = await this.confirmAction({
+                title: "Xác nhận xóa domain?",
+                text: `Bạn có chắc muốn xóa vĩnh viễn domain "${domainName}" khỏi hệ thống?`,
+                confirmButtonText: "Xóa domain",
+                cancelButtonText: "Hủy",
+                icon: "warning",
+            });
+            if (!confirmed) return;
+
+            try {
+                const res = await this.fetchJson("/api/admin/domains.php", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-HTTP-Method-Override": "DELETE",
+                    },
+                    body: JSON.stringify({ _method: "DELETE", id: domainId }),
+                });
+
+                if (res?.ok && res?.data?.success) {
+                    this.showToast(`Đã xóa domain "${domainName}" thành công`, "success");
+                    domainsList = domainsList.filter((d) => Number(d.id) !== domainId);
+                    updateStatsCounters();
+                    renderTable();
+                } else {
+                    const errMsg = res?.data?.message || res?.data?.error || "Không thể xóa domain";
+                    this.showToast(errMsg, "error");
+                }
+            } catch (err) {
+                this.showToast("Lỗi mạng khi xóa domain", "error");
+            }
+        });
+
+        // Initial render
+        renderTable();
+        updateStatsCounters();
+
+        // Listen for new domain added to update domainsList
+        window.addEventListener("domain-added", (e) => {
+            if (e?.detail) {
+                domainsList.unshift(e.detail);
+                updateStatsCounters();
+                renderTable();
+            }
+        });
+    }
+
+    bindGlobalCopyButtons() {
+        document.addEventListener("click", async (e) => {
+            const btnCopy = e.target.closest(".btn-copy-key, [data-copy-value]");
+            if (!btnCopy) return;
+
+            const val = btnCopy.getAttribute("data-copy-value");
+            if (!val) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            await this.copyToClipboard(val);
+
+            btnCopy.classList.add("copied");
+            const originalTitle = btnCopy.getAttribute("title") || "";
+            btnCopy.setAttribute("title", "Đã sao chép!");
+
+            setTimeout(() => {
+                btnCopy.classList.remove("copied");
+                if (originalTitle) {
+                    btnCopy.setAttribute("title", originalTitle);
+                }
+            }, 1200);
+        });
     }
 
     bindMobileMenu() {
