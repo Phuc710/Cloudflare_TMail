@@ -19,6 +19,11 @@ try {
     error_log('Docs domain: load failed - ' . $e->getMessage());
 }
 
+$cfAccountId = defined('CF_ACCOUNT_ID') ? (string) CF_ACCOUNT_ID : (getenv('CF_ACCOUNT_ID') ?: '');
+$cfEmailRoutingUrl = $cfAccountId !== ''
+    ? 'https://dash.cloudflare.com/' . rawurlencode($cfAccountId) . '/email-service/routing'
+    : 'https://dash.cloudflare.com/?to=/:account/email-service/routing';
+
 AdminLayout::begin('Hướng dẫn domain', 'docs-domain', (string) ($admin['username'] ?? 'admin'));
 ?>
 <div class="docs-container">
@@ -28,7 +33,7 @@ AdminLayout::begin('Hướng dẫn domain', 'docs-domain', (string) ($admin['use
             <p>Thiết lập domain nhận email cho KaiMail đúng cách, dễ kiểm soát và an toàn.</p>
         </div>
         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <a href="https://dash.cloudflare.com/42191b3f623753e052781224a8d846d6/email-service/routing" target="_blank" rel="noopener noreferrer" class="btn secondary" style="display: inline-flex; align-items: center; gap: 8px;">
+            <a href="<?= htmlspecialchars($cfEmailRoutingUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" class="btn secondary" style="display: inline-flex; align-items: center; gap: 8px;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f38020" stroke-width="2">
                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
                     <polyline points="22,6 12,13 2,6"></polyline>
@@ -147,7 +152,7 @@ AdminLayout::begin('Hướng dẫn domain', 'docs-domain', (string) ($admin['use
                             Build &rarr; Compute &rarr; Email Service &rarr; <strong>Email Routing</strong>
                         </div>
                     </div>
-                    <a href="https://dash.cloudflare.com/42191b3f623753e052781224a8d846d6/email-service/routing" target="_blank" rel="noopener noreferrer" class="btn primary btn-sm" style="background: #f38020; border-color: #f38020; color: #fff; text-decoration: none;">
+                    <a href="<?= htmlspecialchars($cfEmailRoutingUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" class="btn primary btn-sm" style="background: #f38020; border-color: #f38020; color: #fff; text-decoration: none;">
                         Mở trực tiếp Email Routing &nearr;
                     </a>
                 </div>
