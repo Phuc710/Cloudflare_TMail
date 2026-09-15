@@ -46,15 +46,16 @@ Options -Indexes
     </FilesMatch>
 </IfModule>
 
-# Public docs route
-RewriteRule ^docs/?$ user_docs/index.php [L]
-RewriteRule ^user_docs/?$ user_docs/index.php [L]
+# Public docs & tools routes
+RewriteRule ^docs/?$ index.php [L]
+RewriteRule ^user_docs/?$ index.php [L]
+RewriteRule ^qr/?$ index.php [L]
 
 # Admin routes - Clean URLs
 RewriteRule ^adminkaishop/login/?$ adminkaishop/login.php [L]
-RewriteRule ^adminkaishop/emails/?$ adminkaishop/emails.php [L]
-RewriteRule ^adminkaishop/managerdomain/?$ adminkaishop/managerdomain.php [L]
-RewriteRule ^adminkaishop/expired/?$ adminkaishop/expired.php [L]
+RewriteRule ^adminkaishop/emails/?$ adminkaishop/index.php [L]
+RewriteRule ^adminkaishop/domains/?$ adminkaishop/domains.php [L]
+RewriteRule ^adminkaishop/managerdomain/?$ adminkaishop/domains.php [L]
 RewriteRule ^adminkaishop/tokens/?$ adminkaishop/tokens.php [L]
 RewriteRule ^adminkaishop/docs-domain/?$ adminkaishop/docs-domain.php [L]
 RewriteRule ^adminkaishop/docs-api/?$ adminkaishop/docs-api.php [L]

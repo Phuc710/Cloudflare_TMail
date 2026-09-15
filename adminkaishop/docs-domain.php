@@ -82,7 +82,7 @@ AdminLayout::begin('Hướng dẫn domain', 'docs-domain', (string) ($admin['use
             <article class="step-card">
                 <h3><span class="step-number">2</span> Thêm domain vào KaiMail Admin</h3>
                 <p>Khai báo domain để hệ thống bắt đầu chấp nhận email:</p>
-                <div class="code-box" style="margin: 10px 0;">Trang quản lý: <?= htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8') ?>/adminkaishop/managerdomain
+                <div class="code-box" style="margin: 10px 0;">Trang quản lý: <?= htmlspecialchars(BASE_URL, ENT_QUOTES, 'UTF-8') ?>/adminkaishop/domains
 Nút: "Thêm domain" (Góc phải trên cùng)
 Tên miền: dewii.dpdns.org
 Trạng thái: Hoạt động ngay</div>

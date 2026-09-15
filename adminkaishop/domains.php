@@ -35,10 +35,10 @@ try {
         $stats['total_emails'] += (int) ($d['email_count'] ?? 0);
     }
 } catch (Throwable $e) {
-    error_log('Admin managerdomain: load failed - ' . $e->getMessage());
+    error_log('Admin domains: load failed - ' . $e->getMessage());
 }
 
-AdminLayout::begin('Quản lý domain', 'managerdomain', (string) ($admin['username'] ?? 'admin'));
+AdminLayout::begin('Quản lý domain', 'domains', (string) ($admin['username'] ?? 'admin'));
 ?>
 <header class="page-header">
     <div class="page-header-title">

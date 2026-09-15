@@ -1911,4 +1911,92 @@ body.swal2-toast-shown .swal2-container.swal2-top-right,
 .tmail-modal-preview span {
     color: #0f172a;
     font-family: 'JetBrains Mono', monospace;
-}
+}
+
+/* ==========================================================================
+   QR Code Mode (Ultra-Clean Senior Minimalist matching TwoFA & Mail)
+   ========================================================================== */
+.qr-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.qr-card-body {
+    min-height: 320px;
+    padding: 38px 24px 34px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+}
+
+.qr-card-body .empty-state {
+    min-height: 240px;
+    padding: 20px;
+}
+
+.empty-qr-svg {
+    display: block;
+    margin-bottom: 6px;
+    opacity: 0.85;
+}
+
+.qr-active-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    animation: kmFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.qr-frame-box {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
+    cursor: var(--cursor-pointer);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.qr-frame-box:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 8px 20px -4px rgba(15, 23, 42, 0.08);
+}
+
+.qr-frame-box:active {
+    transform: scale(0.98);
+}
+
+#qrCanvasContainer {
+    width: 220px;
+    height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#qrCanvasContainer canvas {
+    display: none !important;
+}
+
+#qrCanvasContainer img {
+    display: block !important;
+    width: 220px !important;
+    height: 220px !important;
+    border-radius: 6px;
+}
+
+.qr-hint-text {
+    font-size: 13px;
+    font-weight: 500;
+    color: #94a3b8;
+    text-align: center;
+    user-select: none;
+}

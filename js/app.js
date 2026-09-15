@@ -278,10 +278,22 @@ class KaiMailRouter {
     getCurrentRoute() {
         const path = window.location.pathname.replace(/\/+$/, "");
         const twofaPath = (this.basePath + "/2fa").replace(/\/+$/, "");
+        const docsPath = (this.basePath + "/docs").replace(/\/+$/, "");
+        const userDocsPath = (this.basePath + "/user_docs").replace(/\/+$/, "");
+        const qrPath = (this.basePath + "/qr").replace(/\/+$/, "");
+        const qrMatch = path.match(/(?:\/qr)?\/c\/(.+)$/);
         const search = new URLSearchParams(window.location.search);
+
+        if (path === docsPath || path === userDocsPath || search.get("mode") === "docs") {
+            return { mode: "docs", email: "" };
+        }
 
         if (path === twofaPath || search.get("mode") === "twofa") {
             return { mode: "twofa", email: "" };
+        }
+
+        if (path === qrPath || search.get("mode") === "qr") {
+            return { mode: "qr", email: "" };
         }
 
         let email = String(search.get("email") || "").trim().toLowerCase();
@@ -302,8 +314,12 @@ class KaiMailRouter {
     navigate(mode, email = "", replace = false) {
         let targetPath = this.basePath || "";
 
-        if (mode === "twofa") {
+        if (mode === "docs") {
+            targetPath = (this.basePath || "") + "/docs";
+        } else if (mode === "twofa") {
             targetPath = (this.basePath || "") + "/2fa";
+        } else if (mode === "qr") {
+            targetPath = (this.basePath || "") + "/qr";
         } else {
             const cleanEmail = String(email || "").trim().toLowerCase();
             if (cleanEmail && cleanEmail.includes("@")) {
@@ -805,6 +821,234 @@ class KaiMailTwofaController {
     }
 }
 
+/**
+ * KaiMail QR Controller - Quản lý chức năng tạo mã QR đồng bộ theo style 2FA
+ */
+class KaiMailQrController {
+    constructor({ toast, baseUrl }) {
+        this.toast = typeof toast === "function" ? toast : console.log;
+        this.baseUrl = baseUrl || "";
+        this.qrCodeInstance = null;
+        this.debounceTimer = null;
+        this.bindDom();
+    }
+
+    bindDom() {
+        this.qrInput = document.getElementById("qrInput");
+        this.qrClearBtn = document.getElementById("qrClearBtn");
+        this.generateQrBtn = document.getElementById("generateQrBtn");
+        this.qrCanvasContainer = document.getElementById("qrCanvasContainer");
+        this.qrPlaceholder = document.getElementById("qrPlaceholder");
+        this.qrResultContainer = document.getElementById("qrResultContainer");
+        this.qrDownloadBtn = document.getElementById("qrDownloadBtn");
+        this.qrCopyBtn = document.getElementById("qrCopyBtn");
+        this.qrStageWrapper = document.getElementById("qrStageWrapper");
+    }
+
+    init() {
+        this.bindEvents();
+        this.renderQr("");
+    }
+
+    bindEvents() {
+        if (this.qrInput) {
+            // Typing ONLY controls clear button visibility; does NOT generate QR
+            this.qrInput.addEventListener("input", () => {
+                const val = this.qrInput.value.trim();
+                if (this.qrClearBtn) {
+                    this.qrClearBtn.style.display = val !== "" ? "inline-flex" : "none";
+                }
+                if (val === "") {
+                    this.renderQr("");
+                }
+            });
+
+            // Enter key triggers generation
+            this.qrInput.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    this.handleGenerate();
+                }
+            });
+        }
+
+        if (this.qrClearBtn) {
+            this.qrClearBtn.addEventListener("click", () => {
+                if (this.qrInput) {
+                    this.qrInput.value = "";
+                    this.qrClearBtn.style.display = "none";
+                    this.renderQr("");
+                    this.qrInput.focus();
+                }
+            });
+        }
+
+        // Clicking "Tạo QR" button triggers generation
+        if (this.generateQrBtn) {
+            this.generateQrBtn.addEventListener("click", () => {
+                this.handleGenerate();
+            });
+        }
+
+        if (this.qrDownloadBtn) {
+            this.qrDownloadBtn.addEventListener("click", () => this.downloadPng());
+        }
+
+        if (this.qrCopyBtn) {
+            this.qrCopyBtn.addEventListener("click", () => {
+                const val = this.qrInput ? this.qrInput.value.trim() : "";
+                if (!val) return;
+                this.copyTextToClipboard(val);
+                this.showCopiedState(this.qrCopyBtn);
+                this.toast("Đã sao chép nội dung!", "success");
+            });
+        }
+
+        if (this.qrStageWrapper) {
+            this.qrStageWrapper.addEventListener("click", () => {
+                const val = this.qrInput ? this.qrInput.value.trim() : "";
+                if (val) {
+                    this.downloadPng();
+                }
+            });
+        }
+    }
+
+    handleGenerate() {
+        const val = this.qrInput ? this.qrInput.value.trim() : "";
+        if (!val) {
+            this.toast("Vui lòng nhập nội dung để tạo mã QR", "error");
+            if (this.qrInput) this.qrInput.focus();
+            return;
+        }
+
+        // Render QR with pure input string
+        this.renderQr(val);
+        if (this.qrInput) this.qrInput.focus();
+    }
+
+    showCopiedState(btn) {
+        if (!btn) return;
+        btn.classList.add("copied");
+        const copyIcon = btn.querySelector(".copy-icon");
+        const checkIcon = btn.querySelector(".check-icon");
+        if (copyIcon && checkIcon) {
+            copyIcon.classList.add("hidden");
+            checkIcon.classList.remove("hidden");
+            setTimeout(() => {
+                btn.classList.remove("copied");
+                copyIcon.classList.remove("hidden");
+                checkIcon.classList.add("hidden");
+            }, 1800);
+        }
+    }
+
+    renderQr(text) {
+        const clean = String(text || "").trim();
+
+        if (!clean) {
+            if (this.qrPlaceholder) this.qrPlaceholder.style.display = "flex";
+            if (this.qrResultContainer) this.qrResultContainer.style.display = "none";
+            if (this.qrDownloadBtn) {
+                this.qrDownloadBtn.classList.add("is-disabled");
+                this.qrDownloadBtn.disabled = true;
+            }
+            if (this.qrCopyBtn) {
+                this.qrCopyBtn.classList.add("is-disabled");
+                this.qrCopyBtn.disabled = true;
+            }
+            if (this.qrCanvasContainer) this.qrCanvasContainer.innerHTML = "";
+            return;
+        }
+
+        if (this.qrPlaceholder) this.qrPlaceholder.style.display = "none";
+        if (this.qrResultContainer) this.qrResultContainer.style.display = "flex";
+        if (this.qrDownloadBtn) {
+            this.qrDownloadBtn.classList.remove("is-disabled");
+            this.qrDownloadBtn.disabled = false;
+        }
+        if (this.qrCopyBtn) {
+            this.qrCopyBtn.classList.remove("is-disabled");
+            this.qrCopyBtn.disabled = false;
+        }
+
+        if (this.qrCanvasContainer) {
+            this.qrCanvasContainer.innerHTML = "";
+            try {
+                if (typeof QRCode !== "undefined") {
+                    this.qrCodeInstance = new QRCode(this.qrCanvasContainer, {
+                        text: clean,
+                        width: 220,
+                        height: 220,
+                        colorDark: "#0f172a",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                }
+            } catch (err) {
+                console.error("QRCode generation error:", err);
+            }
+        }
+    }
+
+    copyTextToClipboard(text) {
+        if (!text) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).catch(() => {
+                this.fallbackCopyText(text);
+            });
+        } else {
+            this.fallbackCopyText(text);
+        }
+    }
+
+    fallbackCopyText(text) {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        try { document.execCommand("copy"); } catch {}
+        document.body.removeChild(ta);
+    }
+
+    downloadPng() {
+        if (!this.qrCanvasContainer) return;
+        const canvas = this.qrCanvasContainer.querySelector("canvas");
+        const img = this.qrCanvasContainer.querySelector("img");
+        let dataUrl = "";
+        if (canvas) {
+            dataUrl = canvas.toDataURL("image/png");
+        } else if (img && img.src) {
+            dataUrl = img.src;
+        }
+
+        if (!dataUrl) {
+            this.toast("Chưa có mã QR để tải về", "error");
+            return;
+        }
+
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = `qrcode-${Date.now()}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        this.toast("Đã tải ảnh mã QR thành công!", "success");
+    }
+
+    start() {
+        if (this.qrInput) {
+            this.qrInput.focus();
+        }
+    }
+
+    stop() {
+    }
+}
+
 class KaiMailUserPage {
     constructor() {
         this.config = window.KAIMAIL_CONFIG || {};
@@ -818,6 +1062,10 @@ class KaiMailUserPage {
         this.router = new KaiMailRouter(this.baseUrl);
         this.twofaController = new KaiMailTwofaController({
             toast: (msg, type) => this.toast(msg, type)
+        });
+        this.qrController = new KaiMailQrController({
+            toast: (msg, type) => this.toast(msg, type),
+            baseUrl: this.baseUrl
         });
 
         this.state = {
@@ -867,8 +1115,12 @@ class KaiMailUserPage {
 
         this.defaultGetBtnHtml = this.getMailBtn ? this.getMailBtn.innerHTML : "";
         
+        this.userMain = document.getElementById("userMain");
         this.mailModeContent = document.getElementById("mailModeContent");
         this.twofaModeContent = document.getElementById("twofaModeContent");
+        this.qrModeContent = document.getElementById("qrModeContent");
+        this.docsModeContent = document.getElementById("docsModeContent");
+        this.docsInitialized = false;
         this.modeTabs = document.querySelectorAll(".mode-tab");
     }
 
@@ -980,14 +1232,17 @@ class KaiMailUserPage {
             if (this.originalTitle) document.title = this.originalTitle;
         });
 
-        // 1. Initialize 2FA Controller
+        // 1. Initialize 2FA & QR Controllers
         this.twofaController.init();
+        this.qrController.init();
 
         // 2. Determine Initial Mode FIRST (URL > Router > Config > Default 'mail')
         const path = window.location.pathname.replace(/\/+$/, "");
         const search = new URLSearchParams(window.location.search);
-        const isTwoFaRoute = path.endsWith("/2fa") || search.get("mode") === "twofa" || this.config.isTwoFaRoute || this.config.initialMode === "twofa";
-        const initialMode = isTwoFaRoute ? "twofa" : "mail";
+        const isDocsRoute = path.endsWith("/docs") || path.endsWith("/user_docs") || search.get("mode") === "docs" || this.config.isDocsRoute || this.config.initialMode === "docs";
+        const isTwoFaRoute = !isDocsRoute && (path.endsWith("/2fa") || search.get("mode") === "twofa" || this.config.isTwoFaRoute || this.config.initialMode === "twofa");
+        const isQrRoute = !isDocsRoute && !isTwoFaRoute && (path.endsWith("/qr") || search.get("mode") === "qr" || this.config.isQrRoute || this.config.initialMode === "qr");
+        const initialMode = isDocsRoute ? "docs" : (isTwoFaRoute ? "twofa" : (isQrRoute ? "qr" : "mail"));
         this.switchMode(initialMode, false);
 
         // 3. Mode Switching & Tab Click Events
@@ -1004,6 +1259,15 @@ class KaiMailUserPage {
         this.router.onRoute((route) => {
             if (route.mode !== this.state.currentMode) {
                 this.switchMode(route.mode, false);
+            }
+            if (route.mode === "qr" && route.code) {
+                if (this.qrController) {
+                    this.qrController.handleAutoCopyTrigger(route.code);
+                    if (this.qrController.qrInput) {
+                        this.qrController.qrInput.value = route.code;
+                        this.qrController.renderQr(route.code);
+                    }
+                }
             }
             if (route.mode === "mail") {
                 const targetEmail = this.normalizeEmail(route.email);
@@ -2730,13 +2994,20 @@ class KaiMailUserPage {
         if (this.modeTabs) {
             this.modeTabs.forEach(tab => {
                 const tabMode = tab.getAttribute("data-mode");
-                tab.classList.toggle("active", tabMode === mode);
+                const isActive = tabMode === mode;
+                tab.classList.toggle("active", isActive);
+                tab.setAttribute("aria-selected", isActive ? "true" : "false");
             });
         }
 
         if (mode === "mail") {
+            document.title = "Dịch vụ Temp Mail Free | KaiHub";
+            this.originalTitle = document.title;
+            if (this.userMain) this.userMain.classList.remove("hidden");
             if (this.mailModeContent) this.mailModeContent.classList.remove("hidden");
             if (this.twofaModeContent) this.twofaModeContent.classList.add("hidden");
+            if (this.qrModeContent) this.qrModeContent.classList.add("hidden");
+            if (this.docsModeContent) this.docsModeContent.classList.add("hidden");
 
             if (!this.state.currentEmail) {
                 const initialEmail = this.resolveInitialEmail();
@@ -2752,17 +3023,145 @@ class KaiMailUserPage {
             }
 
             if (this.twofaController) this.twofaController.stop();
+            if (this.qrController) this.qrController.stop();
             if (pushRoute && this.router) {
                 this.router.navigate("mail", this.state.currentEmail || "");
             }
-        } else {
+        } else if (mode === "twofa") {
+            document.title = "Trình Xác Thực 2FA (TOTP) Online Miễn Phí | KaiMail";
+            this.originalTitle = document.title;
+            if (this.userMain) this.userMain.classList.remove("hidden");
             if (this.mailModeContent) this.mailModeContent.classList.add("hidden");
             if (this.twofaModeContent) this.twofaModeContent.classList.remove("hidden");
+            if (this.qrModeContent) this.qrModeContent.classList.add("hidden");
+            if (this.docsModeContent) this.docsModeContent.classList.add("hidden");
             this.stopPolling();
             if (this.twofaController) this.twofaController.start();
+            if (this.qrController) this.qrController.stop();
             if (pushRoute && this.router) {
                 this.router.navigate("twofa");
             }
+        } else if (mode === "qr") {
+            document.title = "Tạo Mã QR Code Online Miễn Phí | KaiMail";
+            this.originalTitle = document.title;
+            if (this.userMain) this.userMain.classList.remove("hidden");
+            if (this.mailModeContent) this.mailModeContent.classList.add("hidden");
+            if (this.twofaModeContent) this.twofaModeContent.classList.add("hidden");
+            if (this.qrModeContent) this.qrModeContent.classList.remove("hidden");
+            if (this.docsModeContent) this.docsModeContent.classList.add("hidden");
+            this.stopPolling();
+            if (this.twofaController) this.twofaController.stop();
+            if (this.qrController) this.qrController.start();
+            if (pushRoute && this.router) {
+                this.router.navigate("qr");
+            }
+        } else if (mode === "docs") {
+            document.title = "Tài Liệu Tích Hợp API - KaiMail | Temp Mail Service";
+            this.originalTitle = document.title;
+            if (this.userMain) this.userMain.classList.add("hidden");
+            if (this.mailModeContent) this.mailModeContent.classList.add("hidden");
+            if (this.twofaModeContent) this.twofaModeContent.classList.add("hidden");
+            if (this.qrModeContent) this.qrModeContent.classList.add("hidden");
+            if (this.docsModeContent) this.docsModeContent.classList.remove("hidden");
+            this.stopPolling();
+            if (this.twofaController) this.twofaController.stop();
+            if (this.qrController) this.qrController.stop();
+            this.initDocsInteractivity();
+            if (pushRoute && this.router) {
+                this.router.navigate("docs");
+            }
+        }
+    }
+
+    initDocsInteractivity() {
+        if (this.docsInitialized || !this.docsModeContent) return;
+        this.docsInitialized = true;
+
+        // 1. Language Tabs Switcher
+        const tabButtons = this.docsModeContent.querySelectorAll(".lang-tab-btn");
+        const tabPanels = this.docsModeContent.querySelectorAll(".lang-panel");
+
+        tabButtons.forEach(btn => {
+            btn.addEventListener("click", () => {
+                const lang = btn.getAttribute("data-lang");
+                tabButtons.forEach(b => b.classList.remove("active"));
+                tabPanels.forEach(p => p.classList.remove("active"));
+
+                btn.classList.add("active");
+                const targetPanel = document.getElementById(`lang-${lang}`);
+                if (targetPanel) {
+                    targetPanel.classList.add("active");
+                }
+            });
+        });
+
+        // 2. Copy Code to Clipboard
+        this.docsModeContent.querySelectorAll(".btn-copy-code").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                const targetId = btn.getAttribute("data-copy-target");
+                const targetEl = document.getElementById(targetId);
+                if (!targetEl) return;
+
+                try {
+                    await navigator.clipboard.writeText(targetEl.textContent.trim());
+                    const originalText = btn.textContent;
+                    btn.textContent = "Đã chép!";
+                    btn.style.background = "#059669";
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.style.background = "";
+                    }, 2000);
+                } catch (err) {
+                    console.error("Copy failed:", err);
+                }
+            });
+        });
+
+        // 3. Mobile Sidebar Toggle
+        const mobileBtn = document.getElementById("mobileTocBtn");
+        const sidebar = document.getElementById("docsSidebar");
+        const overlay = document.getElementById("sidebarOverlay");
+
+        const toggleSidebar = (show) => {
+            if (sidebar) sidebar.classList.toggle("show", show);
+            if (overlay) overlay.classList.toggle("show", show);
+        };
+
+        if (mobileBtn && sidebar && overlay) {
+            mobileBtn.addEventListener("click", () => toggleSidebar(true));
+            overlay.addEventListener("click", () => toggleSidebar(false));
+
+            sidebar.querySelectorAll(".sidebar-link").forEach(link => {
+                link.addEventListener("click", () => {
+                    if (window.innerWidth <= 992) {
+                        toggleSidebar(false);
+                    }
+                });
+            });
+        }
+
+        // 4. Highlight Active Link on Scroll
+        const sections = this.docsModeContent.querySelectorAll(".docs-section, .docs-hero");
+        const navLinks = this.docsModeContent.querySelectorAll(".sidebar-link");
+
+        if (sections.length > 0 && navLinks.length > 0 && "IntersectionObserver" in window) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.getAttribute("id");
+                        navLinks.forEach(link => {
+                            const href = link.getAttribute("href");
+                            if (href === `#${id}`) {
+                                link.classList.add("active");
+                            } else {
+                                link.classList.remove("active");
+                            }
+                        });
+                    }
+                });
+            }, { rootMargin: "-20% 0px -70% 0px" });
+
+            sections.forEach(sec => observer.observe(sec));
         }
     }
 
