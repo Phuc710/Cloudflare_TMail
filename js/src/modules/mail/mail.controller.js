@@ -146,7 +146,6 @@ export class KaiMailUserPage {
 
         this.copyBtn.addEventListener("click", () => this.copyEmail());
 
-        let emailInputDebounce = null;
         this.emailInput.addEventListener("keydown", (event) => {
             if (event.key === "Enter") {
                 event.preventDefault();
@@ -157,21 +156,10 @@ export class KaiMailUserPage {
         this.emailInput.addEventListener("input", () => {
             this.toggleEmailClearBtn();
             this.updateRefreshState();
-
-            const inputVal = this.normalizeEmail(this.emailInput.value);
-            if (this.isValidEmail(inputVal)) {
-                if (emailInputDebounce) clearTimeout(emailInputDebounce);
-                emailInputDebounce = setTimeout(() => {
-                    if (this.normalizeEmail(this.emailInput.value) === inputVal) {
-                        this.openInbox(inputVal, false);
-                    }
-                }, 600);
-            }
         });
 
         if (this.emailClearBtn) {
             this.emailClearBtn.addEventListener("click", () => {
-                if (emailInputDebounce) clearTimeout(emailInputDebounce);
                 this.resetToEmptyMailbox();
             });
         }
@@ -216,11 +204,37 @@ export class KaiMailUserPage {
         const initialMode = isDocsRoute ? "docs" : (isTwoFaRoute ? "twofa" : (isQrRoute ? "qr" : "mail"));
         this.switchMode(initialMode, false);
 
-        // 3. Mode Switching & Tab Click Events
+        // 3. Mode Switching & Mobile Hamburger Menu
+        const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+        const appModeSelector = document.getElementById("appModeSelector");
+        const mobileMenuBackdrop = document.getElementById("mobileMenuBackdrop");
+
+        const toggleMobileMenu = (open) => {
+            if (!appModeSelector) return;
+            const shouldOpen = typeof open === "boolean" ? open : !appModeSelector.classList.contains("is-open");
+            appModeSelector.classList.toggle("is-open", shouldOpen);
+            if (mobileMenuBackdrop) mobileMenuBackdrop.classList.toggle("show", shouldOpen);
+            if (mobileMenuBtn) {
+                mobileMenuBtn.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+                const iconMenu = mobileMenuBtn.querySelector(".icon-menu");
+                const iconClose = mobileMenuBtn.querySelector(".icon-close");
+                if (iconMenu) iconMenu.classList.toggle("hidden", shouldOpen);
+                if (iconClose) iconClose.classList.toggle("hidden", !shouldOpen);
+            }
+        };
+
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener("click", () => toggleMobileMenu());
+        }
+        if (mobileMenuBackdrop) {
+            mobileMenuBackdrop.addEventListener("click", () => toggleMobileMenu(false));
+        }
+
         if (this.modeTabs && this.modeTabs.length > 0) {
             this.modeTabs.forEach(tab => {
                 tab.addEventListener("click", () => {
                     const mode = tab.getAttribute("data-mode");
+                    toggleMobileMenu(false);
                     this.switchMode(mode, true);
                 });
             });
@@ -318,12 +332,19 @@ export class KaiMailUserPage {
         try {
             const { ok, status, data } = await this.api.fetchMessages(email, limit);
             if (!ok) {
+                const errMsg = data?.error || `Không thể tải hộp thư (HTTP ${status || 0})`;
                 if (status === 404) {
                     localStorage.removeItem(this.storageKey);
-                    this.resetToEmptyMailbox();
+                    this.stopPolling();
+                    this.state.currentEmailId = 0;
+                    this.state.renderedIds = new Set();
+                    this.showEmpty(true);
+                    this.showMessageList(false);
+                    this.setUnread(0);
+                    this.toast(errMsg, "error");
                     return false;
                 }
-                throw new Error(data?.error || `Không thể tải hộp thư (HTTP ${status || 0})`);
+                throw new Error(errMsg);
             }
 
             this.state.currentEmailId = Number(data?.email_id || 0);
@@ -462,47 +483,26 @@ export class KaiMailUserPage {
 
             const sender = this.getDisplayName(data);
             const receivedAt = this.time.formatDateTime(data?.received_at);
-            const fromEmail = String(data?.from_email || "").trim();
             const subject = String(data?.subject || "(Không có tiêu đề)").trim();
             const bodyText = String(data?.body_text || "");
 
             const htmlBody = this.extractHtmlBody(data);
-            const extractedOtp = this.extractOTP(subject, bodyText);
 
             detailContainer.innerHTML = `
                 <div class="message-detail-pane">
                     <div class="message-detail-card">
                         <div class="detail-top-bar">
                             <div class="detail-meta-text">
-                                <span class="detail-sender">${this.escapeHtml(sender)}</span>
-                                ${fromEmail ? `<span class="detail-email">&lt;${this.escapeHtml(fromEmail)}&gt;</span>` : ""}
+                                <span class="detail-from-prefix">Từ:</span>
+                                <strong class="detail-sender">${this.escapeHtml(sender)}</strong>
                                 <span class="detail-sep">•</span>
                                 <span class="detail-time">${this.escapeHtml(receivedAt)}</span>
                             </div>
-                            ${extractedOtp ? `
-                                <button type="button" class="btn-copy-otp" data-otp="${this.escapeHtml(extractedOtp)}" title="Sao chép nhanh mã xác nhận">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
-                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                                    </svg>
-                                    <span>Mã: ${this.escapeHtml(extractedOtp)}</span>
-                                </button>
-                            ` : ""}
                         </div>
                         <div class="detail-body-content" id="body-content-${id}"></div>
                     </div>
                 </div>
             `;
-
-            if (extractedOtp) {
-                const otpBtn = detailContainer.querySelector(".btn-copy-otp");
-                if (otpBtn) {
-                    otpBtn.addEventListener("click", (e) => {
-                        e.stopPropagation();
-                        this.copyOtp(extractedOtp);
-                    });
-                }
-            }
 
             const bodyContent = document.getElementById(`body-content-${id}`);
             if (htmlBody !== "") {
@@ -672,17 +672,23 @@ export class KaiMailUserPage {
         const pb = bodyStyle ? parseFloat(bodyStyle.paddingBottom) || 0 : 0;
 
         if (maxBottom > 0) {
-            return Math.ceil(maxBottom + pb);
+            return Math.ceil(maxBottom + pb + 14);
         }
 
         const bodyRect = body.getBoundingClientRect();
-        return Math.ceil(Math.max(bodyRect.height, body.offsetHeight, body.scrollHeight));
+        return Math.ceil(Math.max(bodyRect.height, body.offsetHeight, body.scrollHeight) + 14);
     }
 
     buildEmailSrcdoc(html) {
         const source = String(html || "");
         if (source === "") return "";
-        const baseStyle = "<style>html,body{margin:0;padding:16px 20px;height:auto!important;min-height:0!important;overflow:hidden!important;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1e293b;line-height:1.6;overflow-wrap:break-word;background:#ffffff;box-sizing:border-box;}*,*:before,*:after{box-sizing:inherit;}img{max-width:100%!important;height:auto!important;}table{max-width:100%!important;}</style>";
+        const baseStyle = "<style>" +
+            "html{overflow-x:auto!important;overflow-y:hidden!important;-webkit-overflow-scrolling:touch;}" +
+            "body{margin:0;padding:16px 14px;height:auto!important;min-height:0!important;overflow-x:auto!important;overflow-y:hidden!important;-webkit-overflow-scrolling:touch;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1e293b;line-height:1.6;overflow-wrap:break-word;word-break:break-word;background:#ffffff;box-sizing:border-box;}" +
+            "*,*:before,*:after{box-sizing:inherit;}" +
+            "body>table,body>div,.email-container,.main-table{margin-left:auto!important;margin-right:auto!important;}" +
+            "img{max-width:100%!important;height:auto!important;}" +
+            "</style>";
         if (/<\s*head[\s>]/i.test(source)) {
             return source.replace(/<\s*head[\s>]/i, `$&${baseStyle}`);
         }
@@ -1475,21 +1481,26 @@ export class KaiMailUserPage {
         });
 
         const mobileBtn = document.getElementById("mobileTocBtn");
+        const fabBtn = document.getElementById("docsFabTocBtn");
+        const closeBtn = document.getElementById("sidebarCloseBtn");
         const sidebar = document.getElementById("docsSidebar");
         const overlay = document.getElementById("sidebarOverlay");
 
         const toggleSidebar = (show) => {
             if (sidebar) sidebar.classList.toggle("show", show);
             if (overlay) overlay.classList.toggle("show", show);
+            document.body.style.overflow = (show && window.innerWidth <= 1024) ? "hidden" : "";
         };
 
-        if (mobileBtn && sidebar && overlay) {
-            mobileBtn.addEventListener("click", () => toggleSidebar(true));
-            overlay.addEventListener("click", () => toggleSidebar(false));
+        if (mobileBtn) mobileBtn.addEventListener("click", () => toggleSidebar(true));
+        if (fabBtn) fabBtn.addEventListener("click", () => toggleSidebar(true));
+        if (closeBtn) closeBtn.addEventListener("click", () => toggleSidebar(false));
+        if (overlay) overlay.addEventListener("click", () => toggleSidebar(false));
 
+        if (sidebar) {
             sidebar.querySelectorAll(".sidebar-link").forEach(link => {
                 link.addEventListener("click", () => {
-                    if (window.innerWidth <= 992) {
+                    if (window.innerWidth <= 1024) {
                         toggleSidebar(false);
                     }
                 });

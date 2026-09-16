@@ -102,10 +102,14 @@ final class WebhookController
 
         $emailAccount = $this->emailService->findEmail($cleanTo);
         if (!$emailAccount) {
-            self::log("Email not registered in DB: {$cleanTo}");
+            $emailAccount = $this->emailService->getOrCreateEmail($cleanTo, 'webhook');
+        }
+
+        if (!$emailAccount) {
+            self::log("Email domain not active or invalid in DB: {$cleanTo}");
             return Response::json([
-                'status' => 'success',
-                'message' => 'Email address not registered',
+                'status' => 'ignored',
+                'message' => 'Domain not supported or inactive',
             ]);
         }
 

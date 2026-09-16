@@ -43,7 +43,7 @@ final class UserLayout
                 </div>
             </a>
 
-            <div class="app-mode-selector" role="tablist">
+            <div class="app-mode-selector" id="appModeSelector" role="tablist">
 HTML;
 
         if ($isSinglePageApp) {
@@ -131,22 +131,19 @@ HTML;
         echo <<<HTML
             </div>
 
-            <div class="topbar-clock" id="topbarClock" title="Giờ chuẩn Việt Nam (GMT+7)">
-                <span class="clock-time" id="clockTime">--:--:--</span>
-            </div>
+            <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu chức năng" aria-expanded="false" title="Menu chuyển chế độ">
+                <svg class="icon-menu" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="4" y1="6" x2="20" y2="6"></line>
+                    <line x1="4" y1="12" x2="20" y2="12"></line>
+                    <line x1="4" y1="18" x2="20" y2="18"></line>
+                </svg>
+                <svg class="icon-close hidden" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
         </header>
-        <script>
-            (function() {
-                function updateClock() {
-                    var el = document.getElementById('clockTime');
-                    if (!el) return;
-                    var now = new Date();
-                    el.textContent = now.toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour12: false });
-                }
-                updateClock();
-                setInterval(updateClock, 1000);
-            })();
-        </script>
+        <div class="mobile-menu-backdrop" id="mobileMenuBackdrop"></div>
 HTML;
     }
 

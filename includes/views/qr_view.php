@@ -125,22 +125,32 @@ if ($qrPresetText !== '') {
 
                 <!-- ADMIN CONTROL BOX (Only rendered if Admin is logged in) -->
                 <?php if ($isAdmin): ?>
-                <div class="qr-admin-preset-shell" style="margin-top: 16px; background: #ffffff; border: 1.5px dashed #059669; border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(15,23,42,0.03);">
-                    <div style="font-size: 12px; font-weight: 600; color: #059669; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                        </svg>
-                        <span>Cấu hình văn bản mẫu (Chỉ Admin mới thấy):</span>
-                    </div>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <div class="email-input-wrapper" style="flex: 1;">
-                            <input type="text" id="qrPresetTextInput" class="email-input"
-                                value="<?= htmlspecialchars($qrPresetText, ENT_QUOTES, 'UTF-8') ?>"
-                                placeholder="Admin: Nhập văn bản mẫu cho user...">
+                <div class="qr-admin-preset-shell">
+                    <div class="qr-admin-preset-header">
+                        <div class="qr-admin-title">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            </svg>
+                            <span>Cấu hình văn bản mẫu</span>
                         </div>
-                        <button id="qrPresetSaveAdminBtn" class="btn-primary-action" type="button" style="padding: 0 24px; height: 42px; font-size: 13.5px; background: #059669; border-color: #059669; white-space: nowrap; cursor: pointer;">
-                            <span>Lưu</span>
-                        </button>
+                    </div>
+                    <div class="qr-admin-desc">Nội dung này sẽ hiển thị làm mẫu gợi ý sao chép hoặc mở link nhanh cho toàn bộ người dùng.</div>
+                    <div class="qr-admin-preset-controls">
+                        <div class="qr-admin-textarea-wrapper">
+                            <textarea id="qrPresetTextInput" class="qr-admin-textarea"
+                                rows="3"
+                                placeholder="Admin: Nhập văn bản mẫu cho user (hỗ trợ nhiều dòng, link hoặc mã)..."><?= htmlspecialchars($qrPresetText, ENT_QUOTES, 'UTF-8') ?></textarea>
+                        </div>
+                        <div class="qr-admin-preset-actions">
+                            <button id="qrPresetSaveAdminBtn" class="btn-qr-admin-save" type="button">
+                                <svg class="save-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                    <polyline points="7 3 7 8 15 8"></polyline>
+                                </svg>
+                                <span>Lưu cấu hình</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -149,7 +159,7 @@ if ($qrPresetText !== '') {
                 <div id="qrUserPresetShell" class="qr-user-preset-shell" style="margin-top: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; display: <?= $qrPresetText !== '' ? 'flex' : 'none' ?>; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(15,23,42,0.03);">
                     <div style="flex: 1; min-width: 180px;">
                         <div style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Văn bản mẫu / Mã sẵn có:</div>
-                        <div id="qrPresetUserTextDisplay" style="font-family: var(--font-mono, monospace); font-size: 13.5px; color: #0f172a; font-weight: 500; word-break: break-all;">
+                        <div id="qrPresetUserTextDisplay" style="font-family: var(--font-mono, monospace); font-size: 13.5px; color: #0f172a; font-weight: 500; word-break: break-all; white-space: pre-wrap;">
                             <?php if ($isPresetUrl): ?>
                                 <a href="<?= htmlspecialchars($presetHref, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline; display: inline-flex; align-items: center; gap: 4px; font-weight: 500;">
                                     <span><?= htmlspecialchars($qrPresetText, ENT_QUOTES, 'UTF-8') ?></span>

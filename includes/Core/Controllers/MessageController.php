@@ -89,7 +89,19 @@ final class MessageController
 
         $emailData = $this->emailService->findEmail($email);
         if (!$emailData) {
-            return Response::json(['error' => 'Email not found'], 404);
+            $domain = substr(strrchr($email, "@") ?: '', 1);
+            $activeDomain = $this->emailService->getActiveDomain($domain);
+            if (!$activeDomain) {
+                return Response::json([
+                    'error' => "Tên miền @{$domain} không thuộc hệ thống hoặc đang tạm tắt."
+                ], 400);
+            }
+
+            $source = $context->isAdmin() ? 'admin' : ($context->isApiBot() ? 'api' : 'user');
+            $emailData = $this->emailService->getOrCreateEmail($email, $source);
+            if (!$emailData) {
+                return Response::json(['error' => 'Không thể khởi tạo email này'], 400);
+            }
         }
 
         $resolvedEmailId = (int) $emailData['id'];

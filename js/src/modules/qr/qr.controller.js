@@ -213,10 +213,10 @@ export class KaiMailQrController {
                 e.preventDefault();
                 const input = this.qrPresetTextInput || document.getElementById("qrPresetTextInput");
                 const val = input ? input.value.trim() : "";
-                const origText = saveBtn.innerText;
+                const origHtml = saveBtn.innerHTML;
 
                 saveBtn.disabled = true;
-                saveBtn.innerText = "Đang lưu...";
+                saveBtn.innerHTML = `<span>Đang lưu...</span>`;
 
                 try {
                     const res = await fetch((this.baseUrl || "") + "/api/admin/qr-presets.php", {
@@ -228,17 +228,17 @@ export class KaiMailQrController {
                     if (res && res.success) {
                         this.toast("Admin: Đã lưu văn bản mẫu thành công!", "success");
                         updatePresetUi(val);
-                        saveBtn.innerText = "Đã lưu!";
+                        saveBtn.innerHTML = `<span>Đã lưu!</span>`;
                         setTimeout(() => {
-                            saveBtn.innerText = origText || "Lưu";
+                            saveBtn.innerHTML = origHtml;
                         }, 1500);
                     } else {
                         this.toast(res.message || "Không thể lưu văn bản", "error");
-                        saveBtn.innerText = origText || "Lưu";
+                        saveBtn.innerHTML = origHtml;
                     }
                 } catch (e) {
                     this.toast("Lỗi kết nối máy chủ", "error");
-                    saveBtn.innerText = origText || "Lưu";
+                    saveBtn.innerHTML = origHtml;
                 } finally {
                     saveBtn.disabled = false;
                 }

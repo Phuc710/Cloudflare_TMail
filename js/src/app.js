@@ -4,7 +4,6 @@
  */
 
 import { KaiMailUserPage } from "./modules/mail/mail.controller.js";
-import { initVietnamClock } from "./core/clock.js";
 
 function boot() {
     if (window.__kaimail_initialized) return;
@@ -13,7 +12,6 @@ function boot() {
     const app = new KaiMailUserPage();
     app.init();
     window.kaimail = app;
-    initVietnamClock();
 }
 
 if (document.readyState === "loading") {

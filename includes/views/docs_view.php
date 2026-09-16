@@ -16,6 +16,21 @@
         <div class="docs-layout">
             <!-- Sticky Sidebar Navigation -->
             <aside class="docs-sidebar" id="docsSidebar">
+                <div class="sidebar-mobile-header">
+                    <div class="sidebar-mobile-title">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                        <span>Mục lục API</span>
+                    </div>
+                    <button type="button" class="btn-sidebar-close" id="sidebarCloseBtn" aria-label="Đóng mục lục">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
                 <div class="sidebar-group">
                     <div class="sidebar-group-title">Bắt đầu</div>
                     <a href="#overview" class="sidebar-link active">Giới thiệu tổng quan</a>
@@ -861,3 +876,13 @@ class Program {
                 </section>
             </main>
         </div>
+
+        <!-- Floating Action Button for Mobile TOC -->
+        <button type="button" class="docs-fab-toc" id="docsFabTocBtn" aria-label="Mở mục lục API">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+            <span>Mục lục</span>
+        </button>

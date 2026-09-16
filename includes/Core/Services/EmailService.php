@@ -178,6 +178,94 @@ final class EmailService
     }
 
     /**
+     * Check if a domain exists and is active in the system.
+     */
+    public function getActiveDomain(string $domain): ?array
+    {
+        $domain = strtolower(trim($domain));
+        if ($domain === '') {
+            return null;
+        }
+
+        $stmt = $this->db->prepare("
+            SELECT id, domain, type 
+            FROM domains 
+            WHERE domain = ? AND is_active = 1 
+            LIMIT 1
+        ");
+        $stmt->execute([$domain]);
+        $row = $stmt->fetch();
+        return is_array($row) ? $row : null;
+    }
+
+    /**
+     * Get existing email or auto-provision on-the-fly if its domain is active.
+     */
+    public function getOrCreateEmail(string $email, string $createdBy = 'user'): ?array
+    {
+        $cleanEmail = strtolower(trim($email));
+        if (!filter_var($cleanEmail, FILTER_VALIDATE_EMAIL)) {
+            return null;
+        }
+
+        // 1. Return if already exists
+        $existing = $this->findEmail($cleanEmail);
+        if ($existing) {
+            return $existing;
+        }
+
+        // 2. Extract username & domain
+        $parts = explode('@', $cleanEmail);
+        if (count($parts) !== 2) {
+            return null;
+        }
+        $username = $parts[0];
+        $domainName = $parts[1];
+
+        // 3. Check if domain is active in our system
+        $domainRow = $this->getActiveDomain($domainName);
+        if (!$domainRow) {
+            return null;
+        }
+
+        // 4. Validate username format (standard local-part)
+        if (!preg_match('/^[a-z0-9\-\._+]+$/i', $username)) {
+            return null;
+        }
+
+        $domainId = (int) $domainRow['id'];
+        $source = in_array($createdBy, ['admin', 'user', 'api', 'webhook'], true) ? $createdBy : 'user';
+
+        try {
+            $stmt = $this->db->prepare("
+                INSERT INTO emails (domain_id, email, name_type, is_done, created_by, note)
+                VALUES (?, ?, 'custom', 0, ?, NULL)
+            ");
+            $stmt->execute([$domainId, $cleanEmail, $source]);
+            $newId = (int) $this->db->lastInsertId();
+
+            return [
+                'id' => $newId,
+                'domain_id' => $domainId,
+                'email' => $cleanEmail,
+                'name_type' => 'custom',
+                'is_done' => 0,
+                'created_by' => $source,
+                'note' => null,
+                'created_at' => date('Y-m-d H:i:s'),
+            ];
+        } catch (PDOException $e) {
+            // Race condition duplicate safety
+            $existing = $this->findEmail($cleanEmail);
+            if ($existing) {
+                return $existing;
+            }
+            error_log("EmailService::getOrCreateEmail error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Paginated list of emails with optional filtering.
      */
     public function listEmails(
