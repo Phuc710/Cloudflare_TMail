@@ -64,6 +64,12 @@ if ($segments[0] === 'messages') {
     exit;
 }
 
+// REST route: /api/qr-presets
+if ($segments[0] === 'qr-presets') {
+    App::run(\KaiMail\Core\Controllers\QrPresetController::class);
+    exit;
+}
+
 // No route matched
 Response::error('Not found', 404, 'NotFound', [
     'path' => '/' . $path,

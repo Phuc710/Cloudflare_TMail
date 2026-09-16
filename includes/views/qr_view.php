@@ -1,5 +1,23 @@
+<?php
+require_once __DIR__ . '/../Auth.php';
+require_once __DIR__ . '/../Core/App.php';
+
+use KaiMail\Core\App;
+use KaiMail\Core\Services\QrPresetService;
+
+$isAdmin = Auth::isLoggedIn();
+$qrPresetText = '';
+try {
+    /** @var QrPresetService $qrService */
+    $qrService = App::getService(QrPresetService::class);
+    $qrPresetText = $qrService->getQrText();
+} catch (Throwable $e) {
+    // Ignore load error gracefully
+}
+?>
             <!-- QR Mode Content -->
             <div id="qrModeContent" class="<?= $initialMode === 'qr' ? '' : 'hidden' ?>">
+                <!-- Main Input Shell for creating QR -->
                 <section class="compose-shell">
                     <div class="compose-row">
                         <div class="email-input-wrapper">
@@ -66,7 +84,7 @@
                     </div>
 
                     <div class="qr-card-body">
-                        <!-- Empty State (Chưa nhập nội dung) - Đồng bộ 100% style empty-state từ mail_view -->
+                        <!-- Empty State (Chưa nhập nội dung) -->
                         <div id="qrPlaceholder" class="empty-state">
                             <svg class="empty-qr-svg" width="70" height="70" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
@@ -91,4 +109,46 @@
                         </div>
                     </div>
                 </section>
+
+                <!-- ADMIN CONTROL BOX (Only rendered if Admin is logged in) -->
+                <?php if ($isAdmin): ?>
+                <div class="qr-admin-preset-shell" style="margin-top: 16px; background: #ffffff; border: 1.5px dashed #059669; border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(15,23,42,0.03);">
+                    <div style="font-size: 12px; font-weight: 600; color: #059669; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                        <span>Cấu hình văn bản mẫu (Chỉ Admin mới thấy):</span>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <div class="email-input-wrapper" style="flex: 1;">
+                            <input type="text" id="qrPresetTextInput" class="email-input"
+                                value="<?= htmlspecialchars($qrPresetText, ENT_QUOTES, 'UTF-8') ?>"
+                                placeholder="Admin: Nhập văn bản mẫu cho user...">
+                        </div>
+                        <button id="qrPresetSaveAdminBtn" class="btn-primary-action" type="button" style="padding: 0 24px; height: 42px; font-size: 13.5px; background: #059669; border-color: #059669; white-space: nowrap; cursor: pointer;">
+                            <span>Lưu</span>
+                        </button>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <!-- USER VIEW DISPLAY (Visible to EVERYONE when text is present) -->
+                <div id="qrUserPresetShell" class="qr-user-preset-shell" style="margin-top: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; display: <?= $qrPresetText !== '' ? 'flex' : 'none' ?>; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(15,23,42,0.03);">
+                    <div style="flex: 1; min-width: 180px;">
+                        <div style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Văn bản mẫu / Mã sẵn có:</div>
+                        <div id="qrPresetUserTextDisplay" style="font-family: var(--font-mono, monospace); font-size: 13.5px; color: #0f172a; font-weight: 500; word-break: break-all;"><?= htmlspecialchars($qrPresetText, ENT_QUOTES, 'UTF-8') ?></div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button id="qrPresetCopyBtn" class="btn-secondary-action" type="button" title="Sao chép nội dung" style="padding: 0 16px; height: 38px; font-size: 13px; font-weight: 500; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                            <svg class="copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                            </svg>
+                            <svg class="check-icon hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            <span class="btn-copy-label">Copy</span>
+                        </button>
+                    </div>
+                </div>
             </div>

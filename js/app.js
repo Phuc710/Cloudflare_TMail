@@ -843,11 +843,16 @@ class KaiMailQrController {
         this.qrDownloadBtn = document.getElementById("qrDownloadBtn");
         this.qrCopyBtn = document.getElementById("qrCopyBtn");
         this.qrStageWrapper = document.getElementById("qrStageWrapper");
+
+        this.qrPresetTextInput = document.getElementById("qrPresetTextInput");
+        this.qrPresetCopyBtn = document.getElementById("qrPresetCopyBtn");
+        this.qrPresetSaveAdminBtn = document.getElementById("qrPresetSaveAdminBtn");
     }
 
     init() {
         this.bindEvents();
         this.renderQr("");
+        this.loadPresets();
     }
 
     bindEvents() {
@@ -909,6 +914,76 @@ class KaiMailQrController {
                 const val = this.qrInput ? this.qrInput.value.trim() : "";
                 if (val) {
                     this.downloadPng();
+                }
+            });
+        }
+
+        const getPresetText = () => {
+            const userDisplay = document.getElementById("qrPresetUserTextDisplay");
+            if (userDisplay && userDisplay.textContent && userDisplay.textContent.trim()) {
+                return userDisplay.textContent.trim();
+            }
+            const input = this.qrPresetTextInput || document.getElementById("qrPresetTextInput");
+            if (input && input.value) return input.value.trim();
+            return "";
+        };
+
+        const copyBtn = this.qrPresetCopyBtn || document.getElementById("qrPresetCopyBtn");
+        if (copyBtn) {
+            copyBtn.addEventListener("click", async () => {
+                const val = getPresetText();
+                if (!val) {
+                    this.toast("Chưa có nội dung để sao chép", "error");
+                    return;
+                }
+                await this.copyTextToClipboard(val);
+                this.showCopiedState(copyBtn);
+                const label = copyBtn.querySelector(".btn-copy-label");
+                if (label) label.textContent = "Đã copy!";
+                setTimeout(() => {
+                    if (label) label.textContent = "Copy";
+                }, 1800);
+                this.toast("Đã sao chép văn bản mẫu!", "success");
+            });
+        }
+
+        const saveBtn = this.qrPresetSaveAdminBtn || document.getElementById("qrPresetSaveAdminBtn");
+        if (saveBtn) {
+            saveBtn.addEventListener("click", async (e) => {
+                e.preventDefault();
+                const input = this.qrPresetTextInput || document.getElementById("qrPresetTextInput");
+                const val = input ? input.value.trim() : "";
+                const origText = saveBtn.innerText;
+
+                saveBtn.disabled = true;
+                saveBtn.innerText = "Đang lưu...";
+
+                try {
+                    const res = await fetch((this.baseUrl || "") + "/api/admin/qr-presets.php", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ action: "save_qr_text", qr_text: val })
+                    }).then((r) => r.json());
+
+                    if (res && res.success) {
+                        this.toast("Admin: Đã lưu văn bản mẫu thành công!", "success");
+                        const userDisplay = document.getElementById("qrPresetUserTextDisplay");
+                        const userShell = document.getElementById("qrUserPresetShell");
+                        if (userDisplay) userDisplay.textContent = val;
+                        if (userShell) userShell.style.display = val !== "" ? "flex" : "none";
+                        saveBtn.innerText = "Đã lưu!";
+                        setTimeout(() => {
+                            saveBtn.innerText = origText || "Lưu";
+                        }, 1500);
+                    } else {
+                        this.toast(res.message || "Không thể lưu văn bản", "error");
+                        saveBtn.innerText = origText || "Lưu";
+                    }
+                } catch (e) {
+                    this.toast("Lỗi kết nối máy chủ", "error");
+                    saveBtn.innerText = origText || "Lưu";
+                } finally {
+                    saveBtn.disabled = false;
                 }
             });
         }
@@ -982,11 +1057,16 @@ class KaiMailQrController {
                         height: 220,
                         colorDark: "#0f172a",
                         colorLight: "#ffffff",
-                        correctLevel: QRCode.CorrectLevel.H
+                        correctLevel: QRCode.CorrectLevel.L
                     });
                 }
             } catch (err) {
                 console.error("QRCode generation error:", err);
+                if (String(err).includes("overflow")) {
+                    this.toast("Nội dung quá dài (vượt quá dung lượng mã QR). Vui lòng rút ngắn văn bản.", "error");
+                } else {
+                    this.toast("Lỗi tạo mã QR", "error");
+                }
             }
         }
     }
@@ -1037,6 +1117,89 @@ class KaiMailQrController {
         a.click();
         document.body.removeChild(a);
         this.toast("Đã tải ảnh mã QR thành công!", "success");
+    }
+
+    escapeHtml(str) {
+        return String(str || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    async loadPresets() {
+        const section = document.getElementById("qrPresetsSection");
+        const listContainer = document.getElementById("qrPresetsList");
+        if (!section || !listContainer) return;
+
+        try {
+            const apiPath = (this.baseUrl || "") + "/api/qr-presets";
+            const res = await fetch(apiPath).then((r) => r.json());
+            if (res && res.success && Array.isArray(res.presets) && res.presets.length > 0) {
+                section.style.display = "block";
+                listContainer.innerHTML = res.presets.map((preset) => {
+                    const titleEsc = this.escapeHtml(preset.title || "");
+                    const catEsc = this.escapeHtml(preset.category || "Gợi ý");
+                    const contentEsc = this.escapeHtml(preset.content || "");
+
+                    return `
+                        <div class="qr-preset-card">
+                            <div class="qr-preset-top">
+                                <span class="qr-preset-badge">${catEsc}</span>
+                            </div>
+                            <div class="qr-preset-title-text">${titleEsc}</div>
+                            <div class="qr-preset-content-text" title="${contentEsc}">${contentEsc}</div>
+                            <div class="qr-preset-actions">
+                                <button type="button" class="btn-preset-copy" data-content="${contentEsc}">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                    </svg>
+                                    <span>Copy</span>
+                                </button>
+                                <button type="button" class="btn-preset-use" data-content="${contentEsc}">
+                                    <span>Tạo QR</span>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join("");
+
+                listContainer.querySelectorAll(".btn-preset-copy").forEach((btn) => {
+                    btn.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        const val = btn.getAttribute("data-content") || "";
+                        if (val) {
+                            this.copyTextToClipboard(val);
+                            const span = btn.querySelector("span");
+                            if (span) {
+                                const oldText = span.textContent;
+                                span.textContent = "Đã copy!";
+                                setTimeout(() => { span.textContent = oldText; }, 1500);
+                            }
+                            this.toast("Đã sao chép nội dung!", "success");
+                        }
+                    });
+                });
+
+                listContainer.querySelectorAll(".btn-preset-use").forEach((btn) => {
+                    btn.addEventListener("click", () => {
+                        const val = btn.getAttribute("data-content") || "";
+                        if (val && this.qrInput) {
+                            this.qrInput.value = val;
+                            if (this.qrClearBtn) this.qrClearBtn.style.display = "inline-flex";
+                            this.handleGenerate();
+                        }
+                    });
+                });
+            } else {
+                section.style.display = "none";
+            }
+        } catch (e) {
+            console.error("Failed to load QR presets:", e);
+            section.style.display = "none";
+        }
     }
 
     start() {

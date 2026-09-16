@@ -2088,6 +2088,8 @@ class AdminCore {
         });
     }
 
+
+
     bindMobileMenu() {
         const menuBtn = document.getElementById("mobileMenuBtn");
         const sidebar = document.getElementById("adminSidebar");

@@ -18,6 +18,7 @@ use KaiMail\Core\Services\CustomDomainService;
 use KaiMail\Core\Services\StatsService;
 use KaiMail\Core\Services\CheckerService;
 use KaiMail\Core\Services\TokenService;
+use KaiMail\Core\Services\QrPresetService;
 
 /**
  * Micro Application Kernel & Dependency Container.
@@ -70,6 +71,7 @@ final class App
             StatsService::class => new StatsService(self::$db),
             CheckerService::class => new CheckerService(self::$db),
             TokenService::class => new TokenService(self::$db),
+            QrPresetService::class => new QrPresetService(self::$db),
             default => throw new \InvalidArgumentException("Unknown service: {$class}"),
         };
 
@@ -104,6 +106,9 @@ final class App
             ),
             Controllers\TokenController::class => new Controllers\TokenController(
                 self::getService(TokenService::class)
+            ),
+            Controllers\QrPresetController::class => new Controllers\QrPresetController(
+                self::getService(QrPresetService::class)
             ),
             Controllers\LongPollController::class => new Controllers\LongPollController(
                 self::getDb()

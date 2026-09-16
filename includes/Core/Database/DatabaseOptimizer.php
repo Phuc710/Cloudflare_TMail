@@ -25,6 +25,8 @@ final class DatabaseOptimizer
 
         try {
             self::ensureApiTokensTable($db);
+            self::ensureQrPresetsTable($db);
+            self::ensureSettingsTable($db);
             self::ensureDomainColumns($db);
         } catch (Throwable $e) {
             error_log('DatabaseOptimizer initialization error: ' . $e->getMessage());
@@ -81,6 +83,36 @@ final class DatabaseOptimizer
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_key_id (`key_id`),
             INDEX idx_status (`status`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+        $db->exec($sql);
+    }
+
+    public static function ensureQrPresetsTable(PDO $db): void
+    {
+        $sql = "CREATE TABLE IF NOT EXISTS `qr_presets` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `title` VARCHAR(255) NOT NULL,
+            `content` TEXT NOT NULL,
+            `category` VARCHAR(50) DEFAULT 'general',
+            `sort_order` INT DEFAULT 0,
+            `is_active` TINYINT(1) DEFAULT 1,
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_is_active (`is_active`),
+            INDEX idx_sort_order (`sort_order`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+        $db->exec($sql);
+    }
+
+    public static function ensureSettingsTable(PDO $db): void
+    {
+        $sql = "CREATE TABLE IF NOT EXISTS `settings` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `setting_key` VARCHAR(100) NOT NULL UNIQUE,
+            `setting_value` TEXT,
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_key (`setting_key`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
         $db->exec($sql);
     }
