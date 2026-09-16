@@ -61,13 +61,17 @@ function minifyJs(string $js): string {
     return implode("\n", $cleaned);
 }
 
+// Entrypoint for user application
+$appSrc = $rootDir . DIRECTORY_SEPARATOR . 'js' . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'app.js';
+
 $cssTargets = [
     '/css/home.css' => $rootDir . '/css/home.css',
     '/css/admin.css' => $rootDir . '/css/admin.css',
+    '/css/docs.css' => $rootDir . '/css/docs.css',
 ];
 
 $jsTargets = [
-    '/js/app.js' => $rootDir . '/js/app.js',
+    '/js/src/app.js' => $appSrc,
     '/js/longPolling.js' => $rootDir . '/js/longPolling.js',
     '/js/admin.js' => $rootDir . '/js/admin.js',
     '/js/admin-dashboard.js' => $rootDir . '/js/admin-dashboard.js',
@@ -107,16 +111,24 @@ foreach ($jsTargets as $logicalPath => $sourcePath) {
         echo "   ⚠️ Warning: $sourcePath not found, skipping\n";
         continue;
     }
-    $raw = (string) file_get_contents($sourcePath);
+    if ($sourcePath === $appSrc) {
+        $raw = (string) @shell_exec('npx esbuild ' . escapeshellarg($sourcePath) . ' --bundle --format=iife 2>&1');
+        $baseName = 'app';
+    } else {
+        $raw = (string) file_get_contents($sourcePath);
+        $baseName = pathinfo($sourcePath, PATHINFO_FILENAME);
+    }
     $minified = minifyJs($raw);
     $hash = substr(hash('sha256', $minified), 0, 10);
-    $baseName = pathinfo($sourcePath, PATHINFO_FILENAME);
     $hashedName = "{$baseName}.{$hash}.min.js";
     $targetFile = $jsOutDir . DIRECTORY_SEPARATOR . $hashedName;
     file_put_contents($targetFile, $minified);
 
     $publicHashedPath = "/static/js/{$hashedName}";
     $manifest[$logicalPath] = $publicHashedPath;
+    if ($logicalPath === '/js/src/app.js') {
+        $manifest['/js/app.js'] = $publicHashedPath;
+    }
 
     $rawKb = round(strlen($raw) / 1024, 1);
     $minKb = round(strlen($minified) / 1024, 1);

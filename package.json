@@ -2,12 +2,15 @@
   "name": "kaimail",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "KaiMail - Production Temp Mail Service",
   "scripts": {
+    "dev": "node scripts/build.mjs --dev",
     "build": "node scripts/build.mjs",
     "build:php": "php scripts/build.php"
   },
   "devDependencies": {
+    "esbuild": "^0.28.2",
     "terser": "^5.51.2"
   }
 }

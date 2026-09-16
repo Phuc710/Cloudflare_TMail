@@ -254,7 +254,7 @@ $structuredData = [
         };
     </script>
     <script src="<?= asset_url('/js/longPolling.js') ?>"></script>
-    <script src="<?= asset_url('/js/app.js') ?>"></script>
+    <script type="module" src="<?= asset_url('/js/src/app.js') ?>"></script>
 </body>
 
 </html>

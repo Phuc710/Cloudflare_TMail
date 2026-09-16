@@ -10,17 +10,30 @@ const staticDir = path.join(rootDir, 'static');
 const cssOutDir = path.join(staticDir, 'css');
 const jsOutDir = path.join(staticDir, 'js');
 
+const isDev = process.argv.includes('--dev');
+
+// Entrypoint for user application
+const appSrcEntry = path.join(rootDir, 'js', 'src', 'app.js');
+
+if (isDev) {
+  console.log('🎉 Dev mode: Using native ES Modules directly from js/src/app.js!\n');
+  process.exit(0);
+}
+
 console.log('🚀 [KaiMail Builder - Node.js] Starting Production Asset Compilation...');
 
 fs.mkdirSync(cssOutDir, { recursive: true });
 fs.mkdirSync(jsOutDir, { recursive: true });
 
-// Clean old files
-for (const file of fs.readdirSync(cssOutDir)) {
-  if (file.endsWith('.css')) fs.unlinkSync(path.join(cssOutDir, file));
-}
-for (const file of fs.readdirSync(jsOutDir)) {
-  if (file.endsWith('.js')) fs.unlinkSync(path.join(jsOutDir, file));
+// Clean old files only when --clean is explicitly passed
+const shouldClean = process.argv.includes('--clean');
+if (shouldClean) {
+  for (const file of fs.readdirSync(cssOutDir)) {
+    if (file.endsWith('.css')) fs.unlinkSync(path.join(cssOutDir, file));
+  }
+  for (const file of fs.readdirSync(jsOutDir)) {
+    if (file.endsWith('.js')) fs.unlinkSync(path.join(jsOutDir, file));
+  }
 }
 
 function minifyCss(css) {
@@ -93,7 +106,7 @@ const cssTargets = {
 };
 
 const jsTargets = {
-  '/js/app.js': path.join(rootDir, 'js', 'app.js'),
+  '/js/src/app.js': appSrcEntry,
   '/js/longPolling.js': path.join(rootDir, 'js', 'longPolling.js'),
   '/js/admin.js': path.join(rootDir, 'js', 'admin.js'),
   '/js/admin-dashboard.js': path.join(rootDir, 'js', 'admin-dashboard.js'),
@@ -122,17 +135,35 @@ for (const [logicalPath, sourcePath] of Object.entries(cssTargets)) {
 }
 
 console.log('\n⚡ Compiling & Mangling JavaScript (Anthropic-Style):');
+const esbuild = await import('esbuild');
+
 for (const [logicalPath, sourcePath] of Object.entries(jsTargets)) {
   if (!fs.existsSync(sourcePath)) continue;
-  const raw = fs.readFileSync(sourcePath, 'utf-8');
+  let raw = '';
+  if (sourcePath === appSrcEntry) {
+    const bundled = await esbuild.build({
+      entryPoints: [appSrcEntry],
+      bundle: true,
+      write: false,
+      format: 'iife',
+      target: 'es2020',
+    });
+    raw = bundled.outputFiles[0].text;
+  } else {
+    raw = fs.readFileSync(sourcePath, 'utf-8');
+  }
+
   const minified = await minifyJs(raw, logicalPath);
   const hash = crypto.createHash('sha256').update(minified).digest('hex').slice(0, 10);
-  const baseName = path.basename(sourcePath, path.extname(sourcePath));
+  const baseName = logicalPath === '/js/src/app.js' ? 'app' : path.basename(sourcePath, path.extname(sourcePath));
   const hashedName = `${baseName}.${hash}.min.js`;
   fs.writeFileSync(path.join(jsOutDir, hashedName), minified, 'utf-8');
 
   const publicPath = `/static/js/${hashedName}`;
   manifest[logicalPath] = publicPath;
+  if (logicalPath === '/js/src/app.js') {
+    manifest['/js/app.js'] = publicPath;
+  }
 
   const rawKb = (Buffer.byteLength(raw) / 1024).toFixed(1);
   const minKb = (Buffer.byteLength(minified) / 1024).toFixed(1);
