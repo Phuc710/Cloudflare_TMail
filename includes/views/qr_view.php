@@ -14,6 +14,19 @@ try {
 } catch (Throwable $e) {
     // Ignore load error gracefully
 }
+
+$isPresetUrl = false;
+$presetHref = '';
+if ($qrPresetText !== '') {
+    $trimmedPreset = trim($qrPresetText);
+    if (preg_match('#^https?://#i', $trimmedPreset)) {
+        $isPresetUrl = true;
+        $presetHref = $trimmedPreset;
+    } elseif (preg_match('#^www\.[a-z0-9\-]+(\.[a-z0-9\-]+)+#i', $trimmedPreset)) {
+        $isPresetUrl = true;
+        $presetHref = 'https://' . $trimmedPreset;
+    }
+}
 ?>
             <!-- QR Mode Content -->
             <div id="qrModeContent" class="<?= $initialMode === 'qr' ? '' : 'hidden' ?>">
@@ -136,18 +149,45 @@ try {
                 <div id="qrUserPresetShell" class="qr-user-preset-shell" style="margin-top: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; display: <?= $qrPresetText !== '' ? 'flex' : 'none' ?>; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(15,23,42,0.03);">
                     <div style="flex: 1; min-width: 180px;">
                         <div style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Văn bản mẫu / Mã sẵn có:</div>
-                        <div id="qrPresetUserTextDisplay" style="font-family: var(--font-mono, monospace); font-size: 13.5px; color: #0f172a; font-weight: 500; word-break: break-all;"><?= htmlspecialchars($qrPresetText, ENT_QUOTES, 'UTF-8') ?></div>
+                        <div id="qrPresetUserTextDisplay" style="font-family: var(--font-mono, monospace); font-size: 13.5px; color: #0f172a; font-weight: 500; word-break: break-all;">
+                            <?php if ($isPresetUrl): ?>
+                                <a href="<?= htmlspecialchars($presetHref, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline; display: inline-flex; align-items: center; gap: 4px; font-weight: 500;">
+                                    <span><?= htmlspecialchars($qrPresetText, ENT_QUOTES, 'UTF-8') ?></span>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                        <polyline points="15 3 21 3 21 9"></polyline>
+                                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                                    </svg>
+                                </a>
+                            <?php else: ?>
+                                <?= htmlspecialchars($qrPresetText, ENT_QUOTES, 'UTF-8') ?>
+                            <?php endif; ?>
+                        </div>
                     </div>
                     <div style="display: flex; gap: 8px;">
-                        <button id="qrPresetCopyBtn" class="btn-secondary-action" type="button" title="Sao chép nội dung" style="padding: 0 16px; height: 38px; font-size: 13px; font-weight: 500; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
-                            <svg class="copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                            </svg>
-                            <svg class="check-icon hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                            <span class="btn-copy-label">Copy</span>
+                        <button id="qrPresetCopyBtn" class="btn-secondary-action" type="button"
+                            data-url="<?= $isPresetUrl ? htmlspecialchars($presetHref, ENT_QUOTES, 'UTF-8') : '' ?>"
+                            title="<?= $isPresetUrl ? 'Mở liên kết trong tab mới' : 'Sao chép nội dung' ?>"
+                            style="padding: 0 16px; height: 38px; font-size: 13px; font-weight: 500; border-radius: 6px; border: 1px solid <?= $isPresetUrl ? '#2563eb' : '#cbd5e1' ?>; background: <?= $isPresetUrl ? '#eff6ff' : '#fff' ?>; color: <?= $isPresetUrl ? '#1d4ed8' : '#0f172a' ?>; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                            
+                            <span class="btn-icon-container" style="display: inline-flex; align-items: center;">
+                                <?php if ($isPresetUrl): ?>
+                                    <svg class="open-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                        <polyline points="15 3 21 3 21 9"></polyline>
+                                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                                    </svg>
+                                <?php else: ?>
+                                    <svg class="copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                    </svg>
+                                    <svg class="check-icon hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                <?php endif; ?>
+                            </span>
+                            <span class="btn-copy-label"><?= $isPresetUrl ? 'Mở link' : 'Copy' ?></span>
                         </button>
                     </div>
                 </div>

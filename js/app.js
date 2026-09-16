@@ -920,22 +920,102 @@ class KaiMailQrController {
 
         const getPresetText = () => {
             const userDisplay = document.getElementById("qrPresetUserTextDisplay");
-            if (userDisplay && userDisplay.textContent && userDisplay.textContent.trim()) {
-                return userDisplay.textContent.trim();
+            if (userDisplay) {
+                const link = userDisplay.querySelector("a");
+                if (link && link.textContent) return link.textContent.trim();
+                if (userDisplay.textContent && userDisplay.textContent.trim()) {
+                    return userDisplay.textContent.trim();
+                }
             }
             const input = this.qrPresetTextInput || document.getElementById("qrPresetTextInput");
             if (input && input.value) return input.value.trim();
             return "";
         };
 
+        const updatePresetUi = (text) => {
+            const clean = String(text || "").trim();
+            const userShell = document.getElementById("qrUserPresetShell");
+            const userDisplay = document.getElementById("qrPresetUserTextDisplay");
+            const actionBtn = this.qrPresetCopyBtn || document.getElementById("qrPresetCopyBtn");
+
+            if (userShell) {
+                userShell.style.display = clean !== "" ? "flex" : "none";
+            }
+
+            const isLink = this.isUrl(clean);
+            const linkHref = isLink ? this.toHref(clean) : "";
+
+            if (userDisplay) {
+                if (isLink) {
+                    userDisplay.innerHTML = `
+                        <a href="${this.escapeHtml(linkHref)}" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline; display: inline-flex; align-items: center; gap: 4px; font-weight: 500;">
+                            <span>${this.escapeHtml(clean)}</span>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                            </svg>
+                        </a>
+                    `;
+                } else {
+                    userDisplay.textContent = clean;
+                }
+            }
+
+            if (actionBtn) {
+                actionBtn.setAttribute("data-url", linkHref);
+                actionBtn.title = isLink ? "Mở liên kết trong tab mới" : "Sao chép nội dung";
+                actionBtn.style.borderColor = isLink ? "#2563eb" : "#cbd5e1";
+                actionBtn.style.backgroundColor = isLink ? "#eff6ff" : "#fff";
+                actionBtn.style.color = isLink ? "#1d4ed8" : "#0f172a";
+
+                const iconContainer = actionBtn.querySelector(".btn-icon-container");
+                const label = actionBtn.querySelector(".btn-copy-label");
+
+                if (isLink) {
+                    if (iconContainer) {
+                        iconContainer.innerHTML = `
+                            <svg class="open-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                            </svg>
+                        `;
+                    }
+                    if (label) label.textContent = "Mở link";
+                } else {
+                    if (iconContainer) {
+                        iconContainer.innerHTML = `
+                            <svg class="copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                            </svg>
+                            <svg class="check-icon hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                        `;
+                    }
+                    if (label) label.textContent = "Copy";
+                }
+            }
+        };
+
         const copyBtn = this.qrPresetCopyBtn || document.getElementById("qrPresetCopyBtn");
         if (copyBtn) {
-            copyBtn.addEventListener("click", async () => {
+            copyBtn.addEventListener("click", async (e) => {
+                e.preventDefault();
                 const val = getPresetText();
                 if (!val) {
-                    this.toast("Chưa có nội dung để sao chép", "error");
+                    this.toast("Chưa có nội dung", "error");
                     return;
                 }
+
+                if (this.isUrl(val)) {
+                    const href = this.toHref(val);
+                    window.open(href, "_blank", "noopener,noreferrer");
+                    return;
+                }
+
                 await this.copyTextToClipboard(val);
                 this.showCopiedState(copyBtn);
                 const label = copyBtn.querySelector(".btn-copy-label");
@@ -967,10 +1047,7 @@ class KaiMailQrController {
 
                     if (res && res.success) {
                         this.toast("Admin: Đã lưu văn bản mẫu thành công!", "success");
-                        const userDisplay = document.getElementById("qrPresetUserTextDisplay");
-                        const userShell = document.getElementById("qrUserPresetShell");
-                        if (userDisplay) userDisplay.textContent = val;
-                        if (userShell) userShell.style.display = val !== "" ? "flex" : "none";
+                        updatePresetUi(val);
                         saveBtn.innerText = "Đã lưu!";
                         setTimeout(() => {
                             saveBtn.innerText = origText || "Lưu";
@@ -1126,6 +1203,21 @@ class KaiMailQrController {
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
+    }
+
+    isUrl(str) {
+        if (!str) return false;
+        const trimmed = String(str).trim();
+        if (/^https?:\/\//i.test(trimmed)) return true;
+        if (/^www\.[a-z0-9\-]+(\.[a-z0-9\-]+)+/i.test(trimmed)) return true;
+        return false;
+    }
+
+    toHref(str) {
+        const trimmed = String(str || "").trim();
+        if (/^https?:\/\//i.test(trimmed)) return trimmed;
+        if (/^www\./i.test(trimmed)) return "https://" + trimmed;
+        return trimmed;
     }
 
     async loadPresets() {
