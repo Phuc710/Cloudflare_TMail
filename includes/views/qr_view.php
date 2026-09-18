@@ -222,15 +222,6 @@ if ($qrPresetText !== '') {
                                     </svg>
                                     <span class="btn-copy-label">Copy</span>
                                 </button>
-                                <button type="button" class="btn-preset-action btn-preset-qr btn-preset-use-item" data-text="<?= htmlspecialchars($lineItem['text'], ENT_QUOTES, 'UTF-8') ?>" title="Tạo mã QR cho mã này">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <rect x="3" y="3" width="7" height="7" rx="1"/>
-                                        <rect x="14" y="3" width="7" height="7" rx="1"/>
-                                        <rect x="14" y="14" width="7" height="7" rx="1"/>
-                                        <rect x="3" y="14" width="7" height="7" rx="1"/>
-                                    </svg>
-                                    <span>Tạo QR</span>
-                                </button>
                             </div>
                         </div>
                         <?php endforeach; ?>

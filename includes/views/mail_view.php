@@ -113,15 +113,26 @@
                     <div id="messagesList" class="messages-list"></div>
 
                     <div id="emptyState" class="empty-state">
-                        <svg class="empty-inbox-svg" width="92" height="94" viewBox="0 0 92 87" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M26 54.37V38.9C26.003 37.125 26.9469 35.4846 28.48 34.59L43.48 25.84C45.027 24.9468 46.933 24.9468 48.48 25.84L63.48 34.59C65.0285 35.4745 65.9887 37.1167 66 38.9V54.37C66 57.1314 63.7614 59.37 61 59.37H31C28.2386 59.37 26 57.1314 26 54.37Z" fill="#8C92A5"></path>
-                            <path d="M46 47.7L26.68 36.39C26.2325 37.1579 25.9978 38.0312 26 38.92V54.37C26 57.1314 28.2386 59.37 31 59.37H61C63.7614 59.37 66 57.1314 66 54.37V38.9C66.0022 38.0112 65.7675 37.1379 65.32 36.37L46 47.7Z" fill="#CDCDD8"></path>
-                            <path d="M27.8999 58.27C28.7796 58.9758 29.8721 59.3634 30.9999 59.37H60.9999C63.7613 59.37 65.9999 57.1314 65.9999 54.37V38.9C65.9992 38.0287 65.768 37.1731 65.3299 36.42L27.8999 58.27Z" fill="#E5E5F0"></path>
-                            <g class="emptyInboxRotation">
-                                <path class="emptyInboxRotation" d="M77.8202 29.21L89.5402 25.21C89.9645 25.0678 90.4327 25.1942 90.7277 25.5307C91.0227 25.8673 91.0868 26.348 90.8902 26.75L87.0002 34.62C86.8709 34.8874 86.6407 35.0924 86.3602 35.19C86.0798 35.2806 85.7751 35.2591 85.5102 35.13L77.6502 31.26C77.2436 31.0643 76.9978 30.6401 77.0302 30.19C77.0677 29.7323 77.3808 29.3438 77.8202 29.21Z" fill="#E5E5F0"></path>
-                                <path class="emptyInboxRotation" d="M5.12012 40.75C6.36707 20.9791 21.5719 4.92744 41.2463 2.61179C60.9207 0.296147 79.4368 12.3789 85.2401 31.32" stroke="#E5E5F0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
-                                <path class="emptyInboxRotation" d="M14.18 57.79L2.46001 61.79C2.03313 61.9358 1.56046 61.8088 1.2642 61.4686C0.967927 61.1284 0.906981 60.6428 1.11001 60.24L5.00001 52.38C5.12933 52.1127 5.35954 51.9076 5.64001 51.81C5.92044 51.7194 6.22508 51.7409 6.49001 51.87L14.35 55.74C14.7224 55.9522 14.9394 56.36 14.9073 56.7874C14.8753 57.2149 14.5999 57.5857 14.2 57.74L14.18 57.79Z" fill="#E5E5F0"></path>
-                                <path class="emptyInboxRotation" d="M86.9998 45.8C85.9593 65.5282 70.9982 81.709 51.4118 84.2894C31.8254 86.8697 13.1841 75.1156 7.06982 56.33" stroke="#E5E5F0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+                        <svg class="empty-inbox-svg" width="90" height="90" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Perfectly Centered Rotating Dual-Arrow Ring -->
+                            <g class="empty-inbox-spinner">
+                                <!-- Top Arc + Arrowhead -->
+                                <path d="M 14.3 37.0 A 38 38 0 0 1 85.7 37.0" stroke="#CBD5E1" stroke-width="3" stroke-linecap="round" fill="none" />
+                                <polygon points="88.6,44.0 90.0,31.8 79.7,35.5" fill="#CBD5E1" />
+                                
+                                <!-- Bottom Arc + Arrowhead (100% 180° Symmetric) -->
+                                <path d="M 85.7 63.0 A 38 38 0 0 1 14.3 63.0" stroke="#CBD5E1" stroke-width="3" stroke-linecap="round" fill="none" />
+                                <polygon points="11.4,56.0 10.0,68.2 20.3,64.5" fill="#CBD5E1" />
+                            </g>
+
+                            <!-- Perfectly Centered Envelope Icon (Center at 50, 50) -->
+                            <g class="empty-inbox-envelope">
+                                <!-- Back Wall & Open Flap -->
+                                <path d="M 30 62.5 V 46.5 C 30 44.8 30.9 43.2 32.5 42.3 L 47.5 33.5 C 49 32.6 51 32.6 52.5 33.5 L 67.5 42.3 C 69.1 43.2 70 44.8 70 46.5 V 62.5 C 70 65 68 67 65.5 67 H 34.5 C 32 67 30 65 30 62.5 Z" fill="#737A91" />
+                                <!-- Front Body / Side Folds -->
+                                <path d="M 50 55 L 30.7 44 C 30.2 44.8 30 45.6 30 46.5 V 62.5 C 30 65 32 67 34.5 67 H 65.5 C 68 67 70 65 70 62.5 V 46.5 C 70 45.6 69.8 44.8 69.3 44 L 50 55 Z" fill="#94A3B8" />
+                                <!-- Front Bottom Highlight Flap -->
+                                <path d="M 31.8 66 C 32.6 66.6 33.5 67 34.5 67 H 65.5 C 68 67 70 65 70 62.5 V 46.5 C 70 45.6 69.8 44.8 69.3 44.1 L 31.8 66 Z" fill="#CBD5E1" />
                             </g>
                         </svg>
                         <div class="empty-state-title">Chưa có thư</div>

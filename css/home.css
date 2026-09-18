@@ -979,15 +979,16 @@ body.user-page-body {
 }
 
 .empty-inbox-svg {
-    width: 86px;
+    width: 88px;
     height: 88px;
     display: block;
-    margin-bottom: 2px;
+    margin-bottom: 6px;
 }
 
+.empty-inbox-spinner,
 g.emptyInboxRotation {
-    transform-origin: 46px 43.5px;
-    transform-box: fill-box;
+    transform-origin: 50px 50px;
+    transform-box: view-box;
     animation: emptyInboxSpin 4.5s linear infinite;
 }
 
