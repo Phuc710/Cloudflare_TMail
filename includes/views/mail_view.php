@@ -113,26 +113,23 @@
                     <div id="messagesList" class="messages-list"></div>
 
                     <div id="emptyState" class="empty-state">
-                        <svg class="empty-inbox-svg" width="90" height="90" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <!-- Perfectly Centered Rotating Dual-Arrow Ring -->
-                            <g class="empty-inbox-spinner">
-                                <!-- Top Arc + Arrowhead -->
-                                <path d="M 14.3 37.0 A 38 38 0 0 1 85.7 37.0" stroke="#CBD5E1" stroke-width="3" stroke-linecap="round" fill="none" />
-                                <polygon points="88.6,44.0 90.0,31.8 79.7,35.5" fill="#CBD5E1" />
-                                
-                                <!-- Bottom Arc + Arrowhead (100% 180° Symmetric) -->
-                                <path d="M 85.7 63.0 A 38 38 0 0 1 14.3 63.0" stroke="#CBD5E1" stroke-width="3" stroke-linecap="round" fill="none" />
-                                <polygon points="11.4,56.0 10.0,68.2 20.3,64.5" fill="#CBD5E1" />
+                        <svg class="empty-inbox-svg" width="92" height="92" viewBox="0 0 92 92" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Envelope (Dead center at X=46, Y=46) -->
+                            <g class="empty-inbox-envelope">
+                                <path d="M26 57.77V42.3C26 40.52 26.95 38.88 28.48 37.99L43.48 29.24C45.03 28.35 46.93 28.35 48.48 29.24L63.48 37.99C65.03 38.87 66 40.52 66 42.3V57.77C66 60.53 63.76 62.77 61 62.77H31C28.24 62.77 26 60.53 26 57.77Z" fill="#8C92A5"></path>
+                                <path d="M46 51.1L26.68 39.79C26.23 40.56 26 41.43 26 42.32V57.77C26 60.53 28.24 62.77 31 62.77H61C63.76 62.77 66 60.53 66 57.77V42.3C66 41.41 65.77 40.54 65.32 39.77L46 51.1Z" fill="#CDCDD8"></path>
+                                <path d="M27.9 61.67C28.78 62.38 29.87 62.77 31 62.77H61C63.76 62.77 66 60.53 66 57.77V42.3C66 41.43 65.77 40.57 65.33 39.82L27.9 61.67Z" fill="#E5E5F0"></path>
                             </g>
 
-                            <!-- Perfectly Centered Envelope Icon (Center at 50, 50) -->
-                            <g class="empty-inbox-envelope">
-                                <!-- Back Wall & Open Flap -->
-                                <path d="M 30 62.5 V 46.5 C 30 44.8 30.9 43.2 32.5 42.3 L 47.5 33.5 C 49 32.6 51 32.6 52.5 33.5 L 67.5 42.3 C 69.1 43.2 70 44.8 70 46.5 V 62.5 C 70 65 68 67 65.5 67 H 34.5 C 32 67 30 65 30 62.5 Z" fill="#737A91" />
-                                <!-- Front Body / Side Folds -->
-                                <path d="M 50 55 L 30.7 44 C 30.2 44.8 30 45.6 30 46.5 V 62.5 C 30 65 32 67 34.5 67 H 65.5 C 68 67 70 65 70 62.5 V 46.5 C 70 45.6 69.8 44.8 69.3 44 L 50 55 Z" fill="#94A3B8" />
-                                <!-- Front Bottom Highlight Flap -->
-                                <path d="M 31.8 66 C 32.6 66.6 33.5 67 34.5 67 H 65.5 C 68 67 70 65 70 62.5 V 46.5 C 70 45.6 69.8 44.8 69.3 44.1 L 31.8 66 Z" fill="#CBD5E1" />
+                            <!-- Perfectly Symmetrical Rotating Circular Ring (Dead center at X=46, Y=46, R=39) -->
+                            <g class="emptyInboxRotation">
+                                <!-- Top Arc + Arrow -->
+                                <path d="M9.35 32.66 A39 39 0 0 1 82.65 32.66" stroke="#E5E5F0" stroke-width="3" stroke-linecap="round" fill="none"></path>
+                                <polygon points="85.4,40.2 87.6,28.7 76.3,32.8" fill="#E5E5F0"></polygon>
+
+                                <!-- Bottom Arc + Arrow (180° Point-Reflection Symmetrical) -->
+                                <path d="M82.65 59.34 A39 39 0 0 1 9.35 59.34" stroke="#E5E5F0" stroke-width="3" stroke-linecap="round" fill="none"></path>
+                                <polygon points="6.6,51.8 4.4,63.3 15.7,59.2" fill="#E5E5F0"></polygon>
                             </g>
                         </svg>
                         <div class="empty-state-title">Chưa có thư</div>

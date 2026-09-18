@@ -987,7 +987,7 @@ body.user-page-body {
 
 .empty-inbox-spinner,
 g.emptyInboxRotation {
-    transform-origin: 50px 50px;
+    transform-origin: 46px 46px;
     transform-box: view-box;
     animation: emptyInboxSpin 4.5s linear infinite;
 }
