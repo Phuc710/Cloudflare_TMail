@@ -15,16 +15,27 @@ try {
     // Ignore load error gracefully
 }
 
-$isPresetUrl = false;
-$presetHref = '';
+$presetLines = [];
 if ($qrPresetText !== '') {
-    $trimmedPreset = trim($qrPresetText);
-    if (preg_match('#^https?://#i', $trimmedPreset)) {
-        $isPresetUrl = true;
-        $presetHref = $trimmedPreset;
-    } elseif (preg_match('#^www\.[a-z0-9\-]+(\.[a-z0-9\-]+)+#i', $trimmedPreset)) {
-        $isPresetUrl = true;
-        $presetHref = 'https://' . $trimmedPreset;
+    $rawLines = preg_split("/\r\n|\n|\r/", $qrPresetText);
+    foreach ($rawLines as $rawLine) {
+        $trimmed = trim($rawLine);
+        if ($trimmed !== '') {
+            $isUrl = false;
+            $href = '';
+            if (preg_match('#^https?://#i', $trimmed)) {
+                $isUrl = true;
+                $href = $trimmed;
+            } elseif (preg_match('#^www\.[a-z0-9\-]+(\.[a-z0-9\-]+)+#i', $trimmed)) {
+                $isUrl = true;
+                $href = 'https://' . $trimmed;
+            }
+            $presetLines[] = [
+                'text' => $trimmed,
+                'isUrl' => $isUrl,
+                'href' => $href,
+            ];
+        }
     }
 }
 ?>
@@ -131,15 +142,15 @@ if ($qrPresetText !== '') {
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                             </svg>
-                            <span>Cấu hình văn bản mẫu</span>
+                            <span>Cấu hình Mã</span>
                         </div>
                     </div>
-                    <div class="qr-admin-desc">Nội dung này sẽ hiển thị làm mẫu gợi ý sao chép hoặc mở link nhanh cho toàn bộ người dùng.</div>
+                    <div class="qr-admin-desc">Nhập danh sách mã hoặc liên kết (mỗi dòng 1 mã). Hệ thống sẽ hiển thị thành từng dòng riêng cho người dùng.</div>
                     <div class="qr-admin-preset-controls">
                         <div class="qr-admin-textarea-wrapper">
                             <textarea id="qrPresetTextInput" class="qr-admin-textarea"
                                 rows="3"
-                                placeholder="Admin: Nhập văn bản mẫu cho user (hỗ trợ nhiều dòng, link hoặc mã)..."><?= htmlspecialchars($qrPresetText, ENT_QUOTES, 'UTF-8') ?></textarea>
+                                placeholder="Admin: Nhập danh sách mã (mỗi dòng 1 mã hoặc liên kết)..."><?= htmlspecialchars($qrPresetText, ENT_QUOTES, 'UTF-8') ?></textarea>
                         </div>
                         <div class="qr-admin-preset-actions">
                             <button id="qrPresetSaveAdminBtn" class="btn-qr-admin-save" type="button">
@@ -148,57 +159,81 @@ if ($qrPresetText !== '') {
                                     <polyline points="17 21 17 13 7 13 7 21"></polyline>
                                     <polyline points="7 3 7 8 15 8"></polyline>
                                 </svg>
-                                <span>Lưu cấu hình</span>
+                                <span>Lưu mã</span>
                             </button>
                         </div>
                     </div>
                 </div>
                 <?php endif; ?>
 
-                <!-- USER VIEW DISPLAY (Visible to EVERYONE when text is present) -->
-                <div id="qrUserPresetShell" class="qr-user-preset-shell" style="margin-top: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; display: <?= $qrPresetText !== '' ? 'flex' : 'none' ?>; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(15,23,42,0.03);">
-                    <div style="flex: 1; min-width: 180px;">
-                        <div style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Văn bản mẫu / Mã sẵn có:</div>
-                        <div id="qrPresetUserTextDisplay" style="font-family: var(--font-mono, monospace); font-size: 13.5px; color: #0f172a; font-weight: 500; word-break: break-all; white-space: pre-wrap;">
-                            <?php if ($isPresetUrl): ?>
-                                <a href="<?= htmlspecialchars($presetHref, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline; display: inline-flex; align-items: center; gap: 4px; font-weight: 500;">
-                                    <span><?= htmlspecialchars($qrPresetText, ENT_QUOTES, 'UTF-8') ?></span>
+                <!-- USER VIEW DISPLAY (Visible to EVERYONE when lines are present) -->
+                <div id="qrUserPresetShell" class="qr-user-preset-shell" style="<?= count($presetLines) > 0 ? '' : 'display: none;' ?>">
+                    <div class="qr-user-preset-header">
+                        <div class="qr-user-preset-title">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                                <rect x="3" y="3" width="7" height="7" rx="1"/>
+                                <rect x="14" y="3" width="7" height="7" rx="1"/>
+                                <rect x="14" y="14" width="7" height="7" rx="1"/>
+                                <rect x="3" y="14" width="7" height="7" rx="1"/>
+                            </svg>
+                            <span>Mã có sẵn</span>
+                        </div>
+                        <span id="qrPresetCountBadge" class="qr-user-preset-count"><?= count($presetLines) ?></span>
+                    </div>
+
+                    <div id="qrPresetLinesList" class="qr-preset-items-list">
+                        <?php foreach ($presetLines as $idx => $lineItem): ?>
+                        <div class="qr-preset-item-card" data-index="<?= $idx ?>">
+                            <div class="qr-preset-item-info">
+                                <span class="qr-preset-item-badge"><?= $idx + 1 ?></span>
+                                <div class="qr-preset-item-text">
+                                    <?php if ($lineItem['isUrl']): ?>
+                                        <a href="<?= htmlspecialchars($lineItem['href'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" class="qr-preset-item-link">
+                                            <span><?= htmlspecialchars($lineItem['text'], ENT_QUOTES, 'UTF-8') ?></span>
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                                <polyline points="15 3 21 3 21 9"></polyline>
+                                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                                            </svg>
+                                        </a>
+                                    <?php else: ?>
+                                        <?= htmlspecialchars($lineItem['text'], ENT_QUOTES, 'UTF-8') ?>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <div class="qr-preset-item-actions">
+                                <?php if ($lineItem['isUrl']): ?>
+                                <a href="<?= htmlspecialchars($lineItem['href'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" class="btn-preset-action btn-preset-open" title="Mở liên kết">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                                         <polyline points="15 3 21 3 21 9"></polyline>
                                         <line x1="10" y1="14" x2="21" y2="3"></line>
                                     </svg>
+                                    <span>Mở link</span>
                                 </a>
-                            <?php else: ?>
-                                <?= htmlspecialchars($qrPresetText, ENT_QUOTES, 'UTF-8') ?>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 8px;">
-                        <button id="qrPresetCopyBtn" class="btn-secondary-action" type="button"
-                            data-url="<?= $isPresetUrl ? htmlspecialchars($presetHref, ENT_QUOTES, 'UTF-8') : '' ?>"
-                            title="<?= $isPresetUrl ? 'Mở liên kết trong tab mới' : 'Sao chép nội dung' ?>"
-                            style="padding: 0 16px; height: 38px; font-size: 13px; font-weight: 500; border-radius: 6px; border: 1px solid <?= $isPresetUrl ? '#2563eb' : '#cbd5e1' ?>; background: <?= $isPresetUrl ? '#eff6ff' : '#fff' ?>; color: <?= $isPresetUrl ? '#1d4ed8' : '#0f172a' ?>; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
-                            
-                            <span class="btn-icon-container" style="display: inline-flex; align-items: center;">
-                                <?php if ($isPresetUrl): ?>
-                                    <svg class="open-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                                        <polyline points="15 3 21 3 21 9"></polyline>
-                                        <line x1="10" y1="14" x2="21" y2="3"></line>
-                                    </svg>
-                                <?php else: ?>
-                                    <svg class="copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <?php endif; ?>
+                                <button type="button" class="btn-preset-action btn-preset-copy-item" data-text="<?= htmlspecialchars($lineItem['text'], ENT_QUOTES, 'UTF-8') ?>" title="Sao chép">
+                                    <svg class="copy-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                                         <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                                     </svg>
-                                    <svg class="check-icon hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+                                    <svg class="check-icon hidden" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
                                         <polyline points="20 6 9 17 4 12" />
                                     </svg>
-                                <?php endif; ?>
-                            </span>
-                            <span class="btn-copy-label"><?= $isPresetUrl ? 'Mở link' : 'Copy' ?></span>
-                        </button>
+                                    <span class="btn-copy-label">Copy</span>
+                                </button>
+                                <button type="button" class="btn-preset-action btn-preset-qr btn-preset-use-item" data-text="<?= htmlspecialchars($lineItem['text'], ENT_QUOTES, 'UTF-8') ?>" title="Tạo mã QR cho mã này">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="7" height="7" rx="1"/>
+                                        <rect x="14" y="3" width="7" height="7" rx="1"/>
+                                        <rect x="14" y="14" width="7" height="7" rx="1"/>
+                                        <rect x="3" y="14" width="7" height="7" rx="1"/>
+                                    </svg>
+                                    <span>Tạo QR</span>
+                                </button>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
                     </div>
                 </div>
             </div>

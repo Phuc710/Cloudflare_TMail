@@ -93,7 +93,7 @@ final class QrPresetController
             $saved = $this->service->saveQrText($text);
             return Response::json([
                 'success' => true,
-                'message' => 'Lưu văn bản mẫu QR thành công',
+                'message' => 'Lưu mã thành công',
                 'qr_text' => $saved,
             ]);
         }
@@ -127,7 +127,7 @@ final class QrPresetController
             $saved = $this->service->saveQrText($text);
             return Response::json([
                 'success' => true,
-                'message' => 'Lưu văn bản mẫu QR thành công',
+                'message' => 'Lưu mã thành công',
                 'qr_text' => $saved,
             ]);
         }

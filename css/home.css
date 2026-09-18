@@ -2422,3 +2422,204 @@ body.swal2-toast-shown .swal2-container.swal2-top-right,
     }
 }
 
+/* ==========================================================================
+   QR User Preset Items List (1 dòng là 1 mã)
+   ========================================================================== */
+.qr-user-preset-shell {
+    margin-top: 16px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+    box-sizing: border-box;
+}
+
+.qr-user-preset-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.qr-user-preset-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.qr-user-preset-title svg {
+    color: #2563eb;
+    flex-shrink: 0;
+}
+
+.qr-user-preset-count {
+    font-size: 11px;
+    font-weight: 700;
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #dbeafe;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+
+.qr-preset-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    width: 100%;
+}
+
+.qr-preset-item-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    transition: all 0.18s ease;
+    box-sizing: border-box;
+}
+
+.qr-preset-item-card:hover {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.qr-preset-item-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+}
+
+.qr-preset-item-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: var(--font-mono, monospace);
+    flex-shrink: 0;
+}
+
+.qr-preset-item-text {
+    font-family: var(--font-mono, monospace);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #0f172a;
+    word-break: break-all;
+    line-height: 1.45;
+}
+
+.qr-preset-item-link {
+    color: #2563eb;
+    text-decoration: underline;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+    transition: color 0.15s ease;
+}
+
+.qr-preset-item-link:hover {
+    color: #1d4ed8;
+}
+
+.qr-preset-item-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.btn-preset-action {
+    height: 33px;
+    padding: 0 11px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 7px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #334155;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    text-decoration: none;
+    box-sizing: border-box;
+}
+
+.btn-preset-action:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+
+.btn-preset-action.btn-preset-qr {
+    background: #0f172a;
+    border-color: #0f172a;
+    color: #ffffff;
+}
+
+.btn-preset-action.btn-preset-qr:hover {
+    background: #1e293b;
+    border-color: #1e293b;
+}
+
+.btn-preset-action.btn-preset-open {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #2563eb;
+}
+
+.btn-preset-action.btn-preset-open:hover {
+    background: #dbeafe;
+    border-color: #93c5fd;
+    color: #1d4ed8;
+}
+
+.btn-preset-action.copied {
+    background: #ecfdf5 !important;
+    border-color: #a7f3d0 !important;
+    color: #059669 !important;
+}
+
+@media (max-width: 640px) {
+    .qr-preset-item-card {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        padding: 10px 12px;
+    }
+    .qr-preset-item-actions {
+        display: flex;
+        justify-content: flex-end;
+        width: 100%;
+        gap: 6px;
+    }
+    .btn-preset-action {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
+

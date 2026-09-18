@@ -98,114 +98,134 @@ export class KaiMailQrController {
             });
         }
 
-        const getPresetText = () => {
-            const userDisplay = document.getElementById("qrPresetUserTextDisplay");
-            if (userDisplay) {
-                const link = userDisplay.querySelector("a");
-                if (link && link.textContent) return link.textContent.trim();
-                if (userDisplay.textContent && userDisplay.textContent.trim()) {
-                    return userDisplay.textContent.trim();
-                }
-            }
-            const input = this.qrPresetTextInput || document.getElementById("qrPresetTextInput");
-            if (input && input.value) return input.value.trim();
-            return "";
+        const bindPresetItemActions = (container) => {
+            const root = container || document.getElementById("qrPresetLinesList");
+            if (!root) return;
+
+            root.querySelectorAll(".btn-preset-copy-item").forEach((btn) => {
+                btn.addEventListener("click", async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const val = btn.getAttribute("data-text") || "";
+                    if (!val) return;
+                    await this.copyTextToClipboard(val);
+                    this.showCopiedState(btn);
+                    const label = btn.querySelector(".btn-copy-label");
+                    if (label) {
+                        const oldText = label.textContent;
+                        label.textContent = "Đã copy!";
+                        setTimeout(() => { label.textContent = oldText; }, 1800);
+                    }
+                    this.toast("Đã sao chép mã!", "success");
+                });
+            });
+
+            root.querySelectorAll(".btn-preset-use-item").forEach((btn) => {
+                btn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const val = btn.getAttribute("data-text") || "";
+                    if (!val) return;
+                    if (this.qrInput) {
+                        this.qrInput.value = val;
+                        if (this.qrClearBtn) this.qrClearBtn.style.display = "inline-flex";
+                        this.handleGenerate();
+                        this.toast("Đã tạo mã QR cho mã này!", "success");
+                        if (this.qrResultContainer) {
+                            this.qrResultContainer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                        }
+                    }
+                });
+            });
         };
 
         const updatePresetUi = (text) => {
-            const clean = String(text || "").trim();
+            const raw = String(text || "");
+            const lines = raw.split(/\r\n|\n|\r/).map((l) => l.trim()).filter((l) => l.length > 0);
+
             const userShell = document.getElementById("qrUserPresetShell");
-            const userDisplay = document.getElementById("qrPresetUserTextDisplay");
-            const actionBtn = this.qrPresetCopyBtn || document.getElementById("qrPresetCopyBtn");
+            const countBadge = document.getElementById("qrPresetCountBadge");
+            const listContainer = document.getElementById("qrPresetLinesList");
 
             if (userShell) {
-                userShell.style.display = clean !== "" ? "flex" : "none";
+                userShell.style.display = lines.length > 0 ? "block" : "none";
+            }
+            if (countBadge) {
+                countBadge.textContent = String(lines.length);
             }
 
-            const isLink = this.isUrl(clean);
-            const linkHref = isLink ? this.toHref(clean) : "";
+            if (listContainer) {
+                if (lines.length === 0) {
+                    listContainer.innerHTML = "";
+                    return;
+                }
 
-            if (userDisplay) {
-                if (isLink) {
-                    userDisplay.innerHTML = `
-                        <a href="${this.escapeHtml(linkHref)}" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline; display: inline-flex; align-items: center; gap: 4px; font-weight: 500;">
-                            <span>${this.escapeHtml(clean)}</span>
+                listContainer.innerHTML = lines.map((line, idx) => {
+                    const isLink = this.isUrl(line);
+                    const linkHref = isLink ? this.toHref(line) : "";
+                    const textEsc = this.escapeHtml(line);
+                    const hrefEsc = this.escapeHtml(linkHref);
+
+                    const openBtnHtml = isLink ? `
+                        <a href="${hrefEsc}" target="_blank" rel="noopener noreferrer" class="btn-preset-action btn-preset-open" title="Mở liên kết">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                            </svg>
+                            <span>Mở link</span>
+                        </a>
+                    ` : "";
+
+                    const contentHtml = isLink ? `
+                        <a href="${hrefEsc}" target="_blank" rel="noopener noreferrer" class="qr-preset-item-link">
+                            <span>${textEsc}</span>
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                                 <polyline points="15 3 21 3 21 9"></polyline>
                                 <line x1="10" y1="14" x2="21" y2="3"></line>
                             </svg>
                         </a>
+                    ` : textEsc;
+
+                    return `
+                        <div class="qr-preset-item-card" data-index="${idx}">
+                            <div class="qr-preset-item-info">
+                                <span class="qr-preset-item-badge">${idx + 1}</span>
+                                <div class="qr-preset-item-text">${contentHtml}</div>
+                            </div>
+                            <div class="qr-preset-item-actions">
+                                ${openBtnHtml}
+                                <button type="button" class="btn-preset-action btn-preset-copy-item" data-text="${textEsc}" title="Sao chép">
+                                    <svg class="copy-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                    </svg>
+                                    <svg class="check-icon hidden" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                    <span class="btn-copy-label">Copy</span>
+                                </button>
+                                <button type="button" class="btn-preset-action btn-preset-qr btn-preset-use-item" data-text="${textEsc}" title="Tạo mã QR cho mã này">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="7" height="7" rx="1"/>
+                                        <rect x="14" y="3" width="7" height="7" rx="1"/>
+                                        <rect x="14" y="14" width="7" height="7" rx="1"/>
+                                        <rect x="3" y="14" width="7" height="7" rx="1"/>
+                                    </svg>
+                                    <span>Tạo QR</span>
+                                </button>
+                            </div>
+                        </div>
                     `;
-                } else {
-                    userDisplay.textContent = clean;
-                }
-            }
+                }).join("");
 
-            if (actionBtn) {
-                actionBtn.setAttribute("data-url", linkHref);
-                actionBtn.title = isLink ? "Mở liên kết trong tab mới" : "Sao chép nội dung";
-                actionBtn.style.borderColor = isLink ? "#2563eb" : "#cbd5e1";
-                actionBtn.style.backgroundColor = isLink ? "#eff6ff" : "#fff";
-                actionBtn.style.color = isLink ? "#1d4ed8" : "#0f172a";
-
-                const iconContainer = actionBtn.querySelector(".btn-icon-container");
-                const label = actionBtn.querySelector(".btn-copy-label");
-
-                if (isLink) {
-                    if (iconContainer) {
-                        iconContainer.innerHTML = `
-                            <svg class="open-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                                <polyline points="15 3 21 3 21 9"></polyline>
-                                <line x1="10" y1="14" x2="21" y2="3"></line>
-                            </svg>
-                        `;
-                    }
-                    if (label) label.textContent = "Mở link";
-                } else {
-                    if (iconContainer) {
-                        iconContainer.innerHTML = `
-                            <svg class="copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                            </svg>
-                            <svg class="check-icon hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                        `;
-                    }
-                    if (label) label.textContent = "Copy";
-                }
+                bindPresetItemActions(listContainer);
             }
         };
 
-        const copyBtn = this.qrPresetCopyBtn || document.getElementById("qrPresetCopyBtn");
-        if (copyBtn) {
-            copyBtn.addEventListener("click", async (e) => {
-                e.preventDefault();
-                const val = getPresetText();
-                if (!val) {
-                    this.toast("Chưa có nội dung", "error");
-                    return;
-                }
-
-                if (this.isUrl(val)) {
-                    const href = this.toHref(val);
-                    window.open(href, "_blank", "noopener,noreferrer");
-                    return;
-                }
-
-                await this.copyTextToClipboard(val);
-                this.showCopiedState(copyBtn);
-                const label = copyBtn.querySelector(".btn-copy-label");
-                if (label) label.textContent = "Đã copy!";
-                setTimeout(() => {
-                    if (label) label.textContent = "Copy";
-                }, 1800);
-                this.toast("Đã sao chép văn bản mẫu!", "success");
-            });
-        }
+        // Initialize actions for already-rendered lines from PHP
+        bindPresetItemActions();
 
         const saveBtn = this.qrPresetSaveAdminBtn || document.getElementById("qrPresetSaveAdminBtn");
         if (saveBtn) {
@@ -226,14 +246,14 @@ export class KaiMailQrController {
                     }).then((r) => r.json());
 
                     if (res && res.success) {
-                        this.toast("Admin: Đã lưu văn bản mẫu thành công!", "success");
+                        this.toast("Admin: Đã lưu danh sách mã thành công!", "success");
                         updatePresetUi(val);
                         saveBtn.innerHTML = `<span>Đã lưu!</span>`;
                         setTimeout(() => {
                             saveBtn.innerHTML = origHtml;
                         }, 1500);
                     } else {
-                        this.toast(res.message || "Không thể lưu văn bản", "error");
+                        this.toast(res.message || "Không thể lưu mã", "error");
                         saveBtn.innerHTML = origHtml;
                     }
                 } catch (e) {
