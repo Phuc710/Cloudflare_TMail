@@ -1,9 +1,9 @@
 <?php
 /**
- * Standalone Test: SSE (Server-Sent Events) + Redis Pub/Sub
+ * Standalone Test: SSE (Server-Sent Events) + Redis Pub/Sub (Kèm Fallback khi chưa bật Redis)
  * Usage:
- *  - Mở trực tiếp trên trình duyệt: http://localhost/tmail/scratch/test_sse_redis.php
- *  - Bấm nút "Bắn Event Test" để trigger event qua Redis Pub/Sub và thấy EventSource nhận ngay tức thì!
+ *  - Mở trực tiếp trên trình duyệt: http://localhost/tmail/test_sse_redis.php
+ *  - Bấm nút "Bắn 1 Event Test" để thấy SSE stream đẩy data xuống EventSource tức thì!
  */
 
 declare(strict_types=1);
@@ -11,16 +11,36 @@ declare(strict_types=1);
 // Cấu hình Redis
 $redisHost = '127.0.0.1';
 $redisPort = 6379;
-$redisPassword = null; // hoặc pass nếu có
+$redisPassword = null;
 $channelName = 'tmail_admin_events';
+$fallbackQueueFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'tmail_sse_fallback_events.json';
 
 $action = $_GET['action'] ?? '';
+
+// Helper: Check Redis connection
+function checkRedis(string $host, int $port, ?string $password): array {
+    if (!class_exists('Redis')) {
+        return ['ok' => false, 'error' => 'PHP Redis extension (php_redis.dll) chưa được bật trong php.ini!'];
+    }
+    $redis = new Redis();
+    try {
+        $connected = @$redis->connect($host, $port, 1.0);
+        if (!$connected) {
+            return ['ok' => false, 'error' => "Redis Server chưa chạy (Port {$port} Connection refused)."];
+        }
+        if ($password) {
+            $redis->auth($password);
+        }
+        return ['ok' => true, 'client' => $redis];
+    } catch (\Throwable $e) {
+        return ['ok' => false, 'error' => $e->getMessage()];
+    }
+}
 
 // ==========================================
 // 1. ENDPOINT: SSE STREAM (SERVER -> CLIENT)
 // ==========================================
 if ($action === 'stream') {
-    // Tắt hoàn toàn output buffering để stream mượt
     if (function_exists('apache_setenv')) {
         @apache_setenv('no-gzip', '1');
     }
@@ -34,63 +54,77 @@ if ($action === 'stream') {
     header('Content-Type: text/event-stream; charset=utf-8');
     header('Cache-Control: no-cache, no-transform');
     header('Connection: keep-alive');
-    header('X-Accel-Buffering: no'); // Tránh Nginx buffer
+    header('X-Accel-Buffering: no');
 
-    // Gửi ping chào mừng
+    $redisCheck = checkRedis($redisHost, $redisPort, $redisPassword);
+    $driver = $redisCheck['ok'] ? 'redis' : 'fallback';
+
+    // Gửi thông tin trạng thái ban đầu
     echo "event: connected\n";
-    echo "data: " . json_encode(['status' => 'connected', 'time' => date('H:i:s')]) . "\n\n";
+    echo "data: " . json_encode([
+        'status' => 'connected',
+        'driver' => $driver,
+        'redis_ok' => $redisCheck['ok'],
+        'driver_note' => $redisCheck['ok'] ? 'Redis Pub/Sub Mode (Siêu nhanh 0ms)' : 'Fallback Memory/File Mode (' . $redisCheck['error'] . ')',
+        'time' => date('H:i:s')
+    ]) . "\n\n";
     flush();
-
-    // Kiểm tra Extension Redis
-    if (!class_exists('Redis')) {
-        echo "event: error\n";
-        echo "data: " . json_encode(['error' => 'PHP Redis extension chưa được cài đặt/bật!']) . "\n\n";
-        flush();
-        exit;
-    }
-
-    $redis = new Redis();
-    try {
-        $connected = @$redis->connect($redisHost, $redisPort, 3.0);
-        if (!$connected) {
-            echo "event: error\n";
-            echo "data: " . json_encode(['error' => "Không kết nối được Redis tại {$redisHost}:{$redisPort}"]) . "\n\n";
-            flush();
-            exit;
-        }
-        if ($redisPassword) {
-            $redis->auth($redisPassword);
-        }
-        // Set timeout cho subscribe để định kỳ gửi heartbeat (tránh timeout connection)
-        $redis->setOption(Redis::OPT_READ_TIMEOUT, 15);
-    } catch (Throwable $e) {
-        echo "event: error\n";
-        echo "data: " . json_encode(['error' => $e->getMessage()]) . "\n\n";
-        flush();
-        exit;
-    }
 
     $lastHeartbeat = time();
 
-    // Lắng nghe Redis Channel bằng Subscribe loop
-    while (!connection_aborted()) {
-        try {
-            $redis->subscribe([$channelName], function ($redisInstance, $chan, $message) {
-                echo "event: message\n";
-                echo "data: " . $message . "\n\n";
-                flush();
-            });
-        } catch (RedisException $e) {
-            // Read timeout định kỳ -> gửi heartbeat giữ connection
+    if ($driver === 'redis') {
+        /** @var Redis $redis */
+        $redis = $redisCheck['client'];
+        $redis->setOption(Redis::OPT_READ_TIMEOUT, 10);
+
+        while (!connection_aborted()) {
+            try {
+                $redis->subscribe([$channelName], function ($redisInstance, $chan, $message) {
+                    echo "event: message\n";
+                    echo "data: " . $message . "\n\n";
+                    flush();
+                });
+            } catch (RedisException $e) {
+                // Định kỳ gửi heartbeat giữ connection
+                if (time() - $lastHeartbeat >= 10) {
+                    echo ": heartbeat " . time() . "\n\n";
+                    flush();
+                    $lastHeartbeat = time();
+                }
+            }
+        }
+        $redis->close();
+    } else {
+        // FALLBACK MODE: Kiểm tra queue file khi chưa có Redis Server
+        $lastCheckedId = '';
+        if (file_exists($fallbackQueueFile)) {
+            $existing = @json_decode((string)file_get_contents($fallbackQueueFile), true);
+            $lastCheckedId = $existing['id'] ?? '';
+        }
+
+        while (!connection_aborted()) {
+            if (file_exists($fallbackQueueFile)) {
+                $raw = @file_get_contents($fallbackQueueFile);
+                if ($raw) {
+                    $event = @json_decode($raw, true);
+                    if ($event && isset($event['id']) && $event['id'] !== $lastCheckedId) {
+                        $lastCheckedId = $event['id'];
+                        echo "event: message\n";
+                        echo "data: " . json_encode($event) . "\n\n";
+                        flush();
+                    }
+                }
+            }
+
             if (time() - $lastHeartbeat >= 10) {
                 echo ": heartbeat " . time() . "\n\n";
                 flush();
                 $lastHeartbeat = time();
             }
+
+            usleep(150000); // 150ms sleep loop
         }
     }
-
-    $redis->close();
     exit;
 }
 
@@ -100,36 +134,39 @@ if ($action === 'stream') {
 if ($action === 'publish') {
     header('Content-Type: application/json; charset=utf-8');
 
-    if (!class_exists('Redis')) {
-        echo json_encode(['ok' => false, 'error' => 'PHP Redis extension not found']);
-        exit;
-    }
-
     $payload = [
         'id' => uniqid('msg_'),
         'type' => 'new_mail',
-        'from' => 'test_' . rand(100, 999) . '@example.com',
+        'from' => 'user_' . rand(100, 999) . '@kaishop.id.vn',
         'subject' => 'Mail Test Realtime lúc ' . date('H:i:s'),
         'timestamp' => date('Y-m-d H:i:s'),
         'microtime' => microtime(true),
     ];
 
-    try {
-        $redis = new Redis();
-        $redis->connect($redisHost, $redisPort, 2.0);
-        if ($redisPassword) {
-            $redis->auth($redisPassword);
-        }
+    $redisCheck = checkRedis($redisHost, $redisPort, $redisPassword);
+
+    if ($redisCheck['ok']) {
+        /** @var Redis $redis */
+        $redis = $redisCheck['client'];
         $subscribers = $redis->publish($channelName, json_encode($payload));
         $redis->close();
 
         echo json_encode([
             'ok' => true,
+            'driver' => 'redis',
             'subscribers' => $subscribers,
             'payload' => $payload
         ]);
-    } catch (Throwable $e) {
-        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    } else {
+        // Ghi vào fallback queue file
+        @file_put_contents($fallbackQueueFile, json_encode($payload), LOCK_EX);
+
+        echo json_encode([
+            'ok' => true,
+            'driver' => 'fallback',
+            'note' => $redisCheck['error'],
+            'payload' => $payload
+        ]);
     }
     exit;
 }
@@ -143,25 +180,31 @@ if ($action === 'publish') {
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
         body { background: #0f172a; color: #f8fafc; padding: 24px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 800px; display: flex; flex-direction: column; gap: 16px; }
+        .container { width: 100%; max-width: 820px; display: flex; flex-direction: column; gap: 16px; }
         .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; }
         h1 { font-size: 20px; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 8px; }
         .badge { font-size: 12px; padding: 4px 10px; border-radius: 999px; font-weight: 600; }
         .badge-live { background: #065f46; color: #34d399; }
+        .badge-warn { background: #854d0e; color: #fde047; }
         .badge-off { background: #7f1d1d; color: #f87171; }
-        .btn-group { display: flex; gap: 10px; margin-top: 14px; }
+        .btn-group { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
         button { background: #0284c7; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.15s; }
         button:hover { background: #0369a1; }
         button.btn-danger { background: #dc2626; }
         button.btn-danger:hover { background: #b91c1c; }
-        .log-box { background: #020617; border: 1px solid #1e293b; border-radius: 8px; padding: 14px; max-height: 400px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.6; display: flex; flex-direction: column; gap: 6px; }
+        .log-box { background: #020617; border: 1px solid #1e293b; border-radius: 8px; padding: 14px; max-height: 360px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.6; display: flex; flex-direction: column; gap: 6px; }
         .log-entry { padding: 6px 10px; border-radius: 6px; background: #0f172a; border-left: 3px solid #38bdf8; word-break: break-all; }
         .log-entry.event-connected { border-left-color: #34d399; color: #34d399; }
+        .log-entry.event-warn { border-left-color: #facc15; color: #fef08a; }
         .log-entry.event-error { border-left-color: #f87171; color: #f87171; }
         .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
         .stat-card { background: #0f172a; padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #334155; }
         .stat-val { font-size: 22px; font-weight: 700; color: #38bdf8; }
         .stat-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-top: 4px; }
+        .alert-box { padding: 12px 14px; border-radius: 8px; font-size: 13px; line-height: 1.5; margin-top: 12px; }
+        .alert-warning { background: #422006; border: 1px solid #854d0e; color: #fef08a; }
+        .alert-info { background: #082f49; border: 1px solid #0369a1; color: #bae6fd; }
+        code { background: #0f172a; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #38bdf8; }
     </style>
 </head>
 <body>
@@ -169,39 +212,38 @@ if ($action === 'publish') {
 <div class="container">
     <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h1>⚡ Test SSE + Redis Pub/Sub</h1>
-            <span id="statusBadge" class="badge badge-off">Chưa kết nối</span>
+            <h1>⚡ Test SSE (Server-Sent Events)</h1>
+            <span id="statusBadge" class="badge badge-off">Đang kết nối...</span>
         </div>
-        <p style="color: #94a3b8; font-size: 13px; margin-top: 8px;">
-            Trang test 1 file duy nhất tích hợp cả <strong>EventSource client</strong>, <strong>SSE Stream backend</strong>, và <strong>Redis Publisher</strong>.
-        </p>
+
+        <div id="driverAlert" class="alert-box alert-info" style="display: none;"></div>
 
         <div class="stat-grid">
             <div class="stat-card">
                 <div class="stat-val" id="statReceived">0</div>
-                <div class="stat-label">Events Nhận</div>
+                <div class="stat-label">Events Nhận Được</div>
             </div>
             <div class="stat-card">
                 <div class="stat-val" id="statLatency">0 ms</div>
-                <div class="stat-label">Độ Trễ (Latency)</div>
+                <div class="stat-label">Độ Trễ Stream (Latency)</div>
             </div>
             <div class="stat-card">
-                <div class="stat-val" id="statSubscribers">-</div>
-                <div class="stat-label">Subscribers Online</div>
+                <div class="stat-val" id="statDriver">-</div>
+                <div class="stat-label">Chế độ Backend</div>
             </div>
         </div>
 
         <div class="btn-group">
-            <button id="btnPublish" onclick="publishTestEvent()">🚀 Bắn 1 Event Test qua Redis</button>
+            <button id="btnPublish" onclick="publishTestEvent()">🚀 Bắn 1 Event Test ngay</button>
             <button id="btnToggle" class="btn-danger" onclick="toggleConnection()">Ngắt SSE</button>
             <button style="background: #334155;" onclick="clearLogs()">Xóa Log</button>
         </div>
     </div>
 
     <div class="card">
-        <h2 style="font-size: 15px; margin-bottom: 10px; color: #94a3b8;">Log Events Nhận Được:</h2>
+        <h2 style="font-size: 15px; margin-bottom: 10px; color: #94a3b8;">Log Events Realtime (Stream Console):</h2>
         <div id="logBox" class="log-box">
-            <div class="log-entry" style="color: #64748b;">Đang khởi tạo kết nối SSE...</div>
+            <div class="log-entry" style="color: #64748b;">Đang khởi tạo kết nối EventSource...</div>
         </div>
     </div>
 </div>
@@ -230,9 +272,27 @@ if ($action === 'publish') {
         evtSource = new EventSource('?action=stream');
 
         evtSource.addEventListener('connected', (e) => {
-            badge.className = 'badge badge-live';
-            badge.textContent = 'SSE Live (Redis Sub)';
-            addLog(`Đã kết nối luồng SSE: ${e.data}`, 'event-connected');
+            const data = JSON.parse(e.data);
+            const driverElem = document.getElementById('statDriver');
+            const alertBox = document.getElementById('driverAlert');
+
+            if (data.driver === 'redis') {
+                badge.className = 'badge badge-live';
+                badge.textContent = 'SSE Live (Redis Pub/Sub ⚡)';
+                driverElem.textContent = 'Redis Pub/Sub';
+                alertBox.style.display = 'block';
+                alertBox.className = 'alert-box alert-info';
+                alertBox.innerHTML = '🔥 <strong>Redis Đang Hoạt Động:</strong> Kênh Pub/Sub kết nối thành công, độ trễ 0ms không qua Disk/DB.';
+                addLog(`Đã kết nối luồng SSE qua Redis Pub/Sub!`, 'event-connected');
+            } else {
+                badge.className = 'badge badge-warn';
+                badge.textContent = 'SSE Live (Fallback Mode)';
+                driverElem.textContent = 'Fallback Queue';
+                alertBox.style.display = 'block';
+                alertBox.className = 'alert-box alert-warning';
+                alertBox.innerHTML = `⚠️ <strong>Chưa bật Redis Server:</strong> ${data.driver_note}. Đang tự động chuyển sang Fallback Mode để test luồng SSE mượt mà.`;
+                addLog(`Kết nối SSE Fallback: ${data.driver_note}`, 'event-warn');
+            }
         });
 
         evtSource.addEventListener('message', (e) => {
@@ -242,11 +302,10 @@ if ($action === 'publish') {
             try {
                 const data = JSON.parse(e.data);
                 if (data.microtime) {
-                    const diff = Math.round((performance.now() - (performance.timing.navigationStart + data.microtime * 1000 - performance.timing.fetchStart)));
                     const ms = Math.max(1, Math.round((Date.now() / 1000 - data.microtime) * 1000));
                     document.getElementById('statLatency').textContent = `${ms} ms`;
                 }
-                addLog(`⚡ Nhận Mail mới: [${data.from}] ${data.subject}`);
+                addLog(`⚡ Nhận Mail Mới: [${data.from}] "${data.subject}"`);
             } catch(err) {
                 addLog(`Dữ liệu raw: ${e.data}`);
             }
@@ -256,7 +315,7 @@ if ($action === 'publish') {
             if (evtSource.readyState === EventSource.CLOSED) {
                 badge.className = 'badge badge-off';
                 badge.textContent = 'Đã ngắt';
-                addLog('Kết nối SSE bị đóng.', 'event-error');
+                addLog('Kết nối SSE đã đóng.', 'event-error');
             } else {
                 badge.className = 'badge badge-off';
                 badge.textContent = 'Mất kết nối, đang thử lại...';
@@ -290,7 +349,7 @@ if ($action === 'publish') {
             const res = await fetch('?action=publish');
             const json = await res.json();
             if (json.ok) {
-                document.getElementById('statSubscribers').textContent = json.subscribers;
+                addLog(`📤 Đã bắn event thành công qua [${json.driver}]!`, 'event-connected');
             } else {
                 addLog(`Lỗi publish: ${json.error}`, 'event-error');
             }
@@ -298,7 +357,7 @@ if ($action === 'publish') {
             addLog(`Lỗi fetch publish: ${e.message}`, 'event-error');
         } finally {
             btn.disabled = false;
-            btn.textContent = '🚀 Bắn 1 Event Test qua Redis';
+            btn.textContent = '🚀 Bắn 1 Event Test ngay';
         }
     }
 
@@ -306,7 +365,7 @@ if ($action === 'publish') {
         document.getElementById('logBox').innerHTML = '';
     }
 
-    // Auto connect
+    // Tự động kết nối SSE
     connectSSE();
 </script>
 </body>
