@@ -176,7 +176,7 @@ if ($action === 'publish') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test SSE + Redis Realtime</title>
+    <title>Test SSE v2 + Redis Realtime</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
         body { background: #0f172a; color: #f8fafc; padding: 24px; display: flex; justify-content: center; }
