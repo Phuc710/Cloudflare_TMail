@@ -315,7 +315,7 @@ class AdminDashboardPage {
                         <div class="row-actions-group">
                             <button class="btn-icon" data-action="view-messages" data-email-id="${id}" data-email="${emailEncoded}" title="Xem tin nhắn">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path>
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                     <circle cx="12" cy="12" r="3"></circle>
                                 </svg>
                             </button>
