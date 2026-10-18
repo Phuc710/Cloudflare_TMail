@@ -1,0 +1,62 @@
+#!/bin/sh
+# ==============================================================================
+# KaiMail Git Hook: pre-push
+# Tự động build production assets trước khi git push lên remote.
+# ==============================================================================
+
+echo ""
+echo "🚀 [Git Hook: pre-push] Đang tự động kiểm tra và build production assets..."
+
+PHP_BIN=""
+if command -v php >/dev/null 2>&1; then
+    PHP_BIN="php"
+elif [ -f "/c/xampp/php/php.exe" ]; then
+    PHP_BIN="/c/xampp/php/php.exe"
+elif [ -f "C:/xampp/php/php.exe" ]; then
+    PHP_BIN="C:/xampp/php/php.exe"
+fi
+
+BUILD_SUCCESS=0
+
+# Chạy build script (ưu tiên PHP build độc lập không cần node_modules)
+if [ -n "$PHP_BIN" ] && [ -f "scripts/build.php" ]; then
+    "$PHP_BIN" scripts/build.php
+    if [ $? -eq 0 ]; then
+        BUILD_SUCCESS=1
+    fi
+elif command -v node >/dev/null 2>&1 && [ -f "scripts/build.mjs" ]; then
+    node scripts/build.mjs
+    if [ $? -eq 0 ]; then
+        BUILD_SUCCESS=1
+    fi
+fi
+
+if [ $BUILD_SUCCESS -ne 1 ]; then
+    echo "⚠️ [Git Hook: pre-push] Không thể thực thi script build. Bỏ qua bước kiểm tra static."
+    exit 0
+fi
+
+# Kiểm tra xem static/ có thay đổi hoặc file mới nào không
+CHANGES=$(git status --porcelain static/)
+
+if [ -n "$CHANGES" ]; then
+    echo "📦 [Git Hook: pre-push] Phát hiện assets static/ có thay đổi sau khi build!"
+    echo "🔄 Đang tự động commit các file static đã biên dịch..."
+
+    git add static/
+    git commit -m "build: tự động biên dịch production assets trước khi push [skip ci]" --no-verify
+
+    # Lấy tên branch hiện tại
+    CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+    REMOTE_NAME="${1:-origin}"
+
+    echo "📤 Đang đẩy nhánh '$CURRENT_BRANCH' (kèm assets mới nhất) lên '$REMOTE_NAME'..."
+    git push "$REMOTE_NAME" "$CURRENT_BRANCH" --no-verify
+
+    echo "✅ [Git Hook: pre-push] Đã push thành công toàn bộ code và assets mới nhất lên remote!"
+    # Trả về 1 để hủy tiến trình push ban đầu (tránh push hash cũ chưa có commit static)
+    exit 1
+fi
+
+echo "✅ [Git Hook: pre-push] Static assets đã chuẩn chỉnh và đồng bộ. Tiến hành push!"
+exit 0

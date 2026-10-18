@@ -1,0 +1,29 @@
+#!/bin/sh
+# ==============================================================================
+# KaiMail Git Hook: pre-commit
+# Tự động biên dịch assets trước khi commit
+# ==============================================================================
+
+echo "⚡ [Git Hook: pre-commit] Đang kiểm tra và biên dịch assets..."
+
+PHP_BIN=""
+if command -v php >/dev/null 2>&1; then
+    PHP_BIN="php"
+elif [ -f "/c/xampp/php/php.exe" ]; then
+    PHP_BIN="/c/xampp/php/php.exe"
+elif [ -f "C:/xampp/php/php.exe" ]; then
+    PHP_BIN="C:/xampp/php/php.exe"
+fi
+
+if [ -n "$PHP_BIN" ] && [ -f "scripts/build.php" ]; then
+    "$PHP_BIN" scripts/build.php
+elif command -v node >/dev/null 2>&1 && [ -f "scripts/build.mjs" ]; then
+    node scripts/build.mjs
+fi
+
+# Tự động stage thư mục static
+if [ -d "static" ]; then
+    git add static/
+fi
+
+exit 0
