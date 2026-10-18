@@ -133,8 +133,8 @@ final class EmailController
         if ($request->string('action') === 'auto_clean' || $request->string('action') === 'clean_expired' || $request->string('action') === 'clean_db') {
             Gate::authorize($context, Permission::EMAIL_DELETE);
             $days = $request->int('days', 30);
-            $dryRun = (bool) ($request->param('dry_run') ?? false);
-            $allNonAdmin = (bool) ($request->param('all_non_admin') ?? false);
+            $dryRun = $request->bool('dry_run', false);
+            $allNonAdmin = $request->bool('all_non_admin', false);
             $result = $this->service->cleanExpiredEmails($days, $dryRun, $allNonAdmin);
             return Response::success($result);
         }

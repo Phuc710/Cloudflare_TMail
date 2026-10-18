@@ -156,6 +156,11 @@ final class Request
         return $this->body[$key] ?? $this->query[$key] ?? $default;
     }
 
+    public function param(string $key, mixed $default = null): mixed
+    {
+        return $this->input($key, $default);
+    }
+
     public function string(string $key, string $default = ''): string
     {
         $val = $this->input($key, $default);
