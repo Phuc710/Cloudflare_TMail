@@ -19,6 +19,7 @@ use KaiMail\Core\Services\StatsService;
 use KaiMail\Core\Services\CheckerService;
 use KaiMail\Core\Services\TokenService;
 use KaiMail\Core\Services\QrPresetService;
+use KaiMail\Core\Services\DatabaseCleanupService;
 
 /**
  * Micro Application Kernel & Dependency Container.
@@ -72,6 +73,7 @@ final class App
             CheckerService::class => new CheckerService(self::$db),
             TokenService::class => new TokenService(self::$db),
             QrPresetService::class => new QrPresetService(self::$db),
+            DatabaseCleanupService::class => new DatabaseCleanupService(self::$db),
             default => throw new \InvalidArgumentException("Unknown service: {$class}"),
         };
 

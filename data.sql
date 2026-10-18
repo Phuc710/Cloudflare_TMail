@@ -70,11 +70,19 @@ CREATE TABLE IF NOT EXISTS messages (
 
 ALTER TABLE messages ADD FULLTEXT INDEX idx_content_search (subject, body_text);
 
--- TTL / Auto-clean event (optional, for production MySQL event scheduler)
--- CREATE EVENT IF NOT EXISTS evt_purge_old_temp_mail
--- ON SCHEDULE EVERY 1 HOUR
--- DO
---   DELETE FROM messages WHERE received_at < NOW() - INTERVAL 48 HOUR;
+-- Indexes for performance & retention scanning
+ALTER TABLE emails ADD INDEX IF NOT EXISTS idx_emails_createdby_createdat (created_by, created_at);
+
+-- Auto-clean event: Retains 30 days of User & API emails; Admin emails are permanently preserved
+-- Runs daily when MySQL event scheduler is enabled: SET GLOBAL event_scheduler = ON;
+CREATE EVENT IF NOT EXISTS evt_auto_clean_tempmail_30days
+ON SCHEDULE EVERY 1 DAY
+STARTS CURRENT_TIMESTAMP
+COMMENT 'Purge User and API tempmails older than 30 days while preserving Admin emails'
+DO
+  DELETE FROM emails 
+  WHERE (created_by IS NULL OR created_by != 'admin') 
+    AND created_at < NOW() - INTERVAL 30 DAY;
 
 -- ============================================
 -- TABLE: api_tokens

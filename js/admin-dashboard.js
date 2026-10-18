@@ -98,6 +98,10 @@ class AdminDashboardPage {
         deleteSelectedBtn?.addEventListener("click", () => this.deleteSelected());
         copySelectedBtn?.addEventListener("click", () => this.bulkCopy());
 
+        // Auto Clean DB button
+        const autoCleanDbBtn = document.getElementById("autoCleanDbBtn");
+        autoCleanDbBtn?.addEventListener("click", () => this.handleAutoCleanDb());
+
         // Fast Checker
         const checkerForm = document.getElementById("checkerForm");
         checkerForm?.addEventListener("submit", (e) => this.handleCheckerSubmit(e));
@@ -553,6 +557,46 @@ class AdminDashboardPage {
         if (emails.length === 0) return;
         this.core.copyToClipboard(emails.join("\n"));
         this.core.showToast(`Đã sao chép ${emails.length} email vào clipboard`, "success");
+    }
+
+    async handleAutoCleanDb() {
+        const confirmed = await this.core.confirmAction({
+            title: "Chạy Auto Clean DB (30 ngày)?",
+            text: "Hệ thống sẽ dọn dẹp toàn bộ tempmail của USER & API cũ hơn 30 ngày (kèm toàn bộ tin nhắn). Email của ADMIN được bảo vệ vĩnh viễn, không bao giờ bị xóa.",
+            confirmButtonText: "Dọn dẹp ngay",
+            cancelButtonText: "Hủy bỏ",
+            icon: "warning",
+        });
+        if (!confirmed) return;
+
+        this.setLoading(true);
+        try {
+            const { ok, data } = await this.core.postJson("/api/admin/emails.php", {
+                action: "auto_clean",
+                days: 30,
+            });
+
+            if (!ok) {
+                this.core.showToast(data?.error || "Dọn dẹp DB thất bại", "error");
+                return;
+            }
+
+            const resData = data?.data || data;
+            const deletedEmails = resData?.deleted_emails ?? 0;
+            const deletedMessages = resData?.deleted_messages ?? 0;
+            const retainedAdmin = resData?.retained_admin_emails ?? 0;
+
+            this.core.showToast(
+                `Dọn dẹp hoàn tất! Đã xóa ${deletedEmails} email & ${deletedMessages} tin nhắn cũ (>30d). Bảo vệ ${retainedAdmin} email Admin.`,
+                "success"
+            );
+
+            await this.reloadData();
+        } catch (error) {
+            this.core.showToast("Lỗi kết nối khi dọn dẹp DB", "error");
+        } finally {
+            this.setLoading(false);
+        }
     }
 
     async deleteEmail(emailId) {

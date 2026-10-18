@@ -66,6 +66,11 @@ final class EmailController
         // Admin email list query (paginated with filters & statistics)
         Gate::authorize($context, Permission::EMAIL_LIST_ALL);
 
+        if ($request->string('action') === 'retention_stats') {
+            $days = $request->int('days', 30);
+            return Response::json($this->service->getRetentionStats($days));
+        }
+
         $page = $request->int('page', 1);
         $limit = $request->int('limit', 13);
         $search = $request->string('search') ?: null;
@@ -124,7 +129,16 @@ final class EmailController
             ]);
         }
 
-        // 3. Create email(s)
+        // 3. Auto Clean DB (User & API tempmails older than 30 days, Admin emails preserved)
+        if ($request->string('action') === 'auto_clean' || $request->string('action') === 'clean_expired') {
+            Gate::authorize($context, Permission::EMAIL_DELETE);
+            $days = $request->int('days', 30);
+            $dryRun = (bool) ($request->param('dry_run') ?? false);
+            $result = $this->service->cleanExpiredEmails($days, $dryRun);
+            return Response::success($result);
+        }
+
+        // 4. Create email(s)
         $maxAllowed = 10;
         if (Gate::allows($context, Permission::EMAIL_CREATE_BATCH)) {
             $maxAllowed = 50;

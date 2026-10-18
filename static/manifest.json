@@ -2,10 +2,10 @@
     "/css/home.css": "/static/css/home.6937ae32f5.min.css",
     "/css/admin.css": "/static/css/admin.5a649176bc.min.css",
     "/css/docs.css": "/static/css/docs.9b17249169.min.css",
-    "/js/src/app.js": "/static/js/app.154256b585.min.js",
-    "/js/app.js": "/static/js/app.154256b585.min.js",
-    "/js/longPolling.js": "/static/js/longPolling.8419155615.min.js",
-    "/js/admin.js": "/static/js/admin.37da0ad5c0.min.js",
-    "/js/admin-dashboard.js": "/static/js/admin-dashboard.031361e7b5.min.js",
-    "/js/admin-login.js": "/static/js/admin-login.741a480e38.min.js"
+    "/js/src/app.js": "/static/js/app.cfaa173d72.min.js",
+    "/js/app.js": "/static/js/app.cfaa173d72.min.js",
+    "/js/longPolling.js": "/static/js/longPolling.32fa8e2a1f.min.js",
+    "/js/admin.js": "/static/js/admin.1133af9362.min.js",
+    "/js/admin-dashboard.js": "/static/js/admin-dashboard.6ca35adaea.min.js",
+    "/js/admin-login.js": "/static/js/admin-login.9fbe9b32d1.min.js"
 }

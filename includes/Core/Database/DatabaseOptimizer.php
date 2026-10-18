@@ -5,6 +5,7 @@ namespace KaiMail\Core\Database;
 
 use PDO;
 use Throwable;
+use KaiMail\Core\Services\DatabaseCleanupService;
 
 /**
  * Runtime DB performance guard.
@@ -28,6 +29,7 @@ final class DatabaseOptimizer
             self::ensureQrPresetsTable($db);
             self::ensureSettingsTable($db);
             self::ensureDomainColumns($db);
+            DatabaseCleanupService::autoCleanOpportunistically($db);
         } catch (Throwable $e) {
             error_log('DatabaseOptimizer initialization error: ' . $e->getMessage());
         }

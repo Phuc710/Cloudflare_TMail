@@ -409,4 +409,24 @@ final class EmailService
         $stmt->execute([$emailId]);
         return $stmt->rowCount();
     }
+
+    /**
+     * Clean expired temporary emails created by 'user' and 'api' (older than 30 days by default).
+     * Strictly preserves all emails created by 'admin'.
+     */
+    public function cleanExpiredEmails(int $retentionDays = DatabaseCleanupService::DEFAULT_RETENTION_DAYS, bool $dryRun = false): array
+    {
+        $cleanupService = new DatabaseCleanupService($this->db);
+        return $cleanupService->cleanExpiredEmails($retentionDays, $dryRun);
+    }
+
+    /**
+     * Get retention statistics (30 days user/api vs safe admin emails).
+     */
+    public function getRetentionStats(int $retentionDays = DatabaseCleanupService::DEFAULT_RETENTION_DAYS): array
+    {
+        $cleanupService = new DatabaseCleanupService($this->db);
+        return $cleanupService->getRetentionStats($retentionDays);
+    }
 }
+
