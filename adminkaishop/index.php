@@ -31,14 +31,14 @@ AdminLayout::begin('Quản lý email', 'emails', (string) ($admin['username'] ??
         <p>Theo dõi, tạo mới và xử lý email trong hệ thống KaiMail.</p>
     </div>
     <div class="page-actions">
-        <button id="autoCleanDbBtn" class="btn secondary" type="button" title="Auto-clean DB: Chỉ lưu 30 ngày cho User & API, giữ vĩnh viễn Admin">
+        <button id="openCleanDbModalBtn" class="btn danger" type="button" data-modal-open="cleanDbModal" style="display: inline-flex; align-items: center; gap: 6px;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                 <line x1="10" y1="11" x2="10" y2="17"></line>
                 <line x1="14" y1="11" x2="14" y2="17"></line>
             </svg>
-            <span>Auto Clean (30d)</span>
+            <span>Dọn dẹp DB (Xóa tay)</span>
         </button>
         <button id="fastCheckerBtn" class="btn btn-dark" type="button" data-modal-open="checkerModal">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -580,6 +580,110 @@ AdminLayout::begin('Quản lý email', 'emails', (string) ($admin['username'] ??
                     <button type="submit" class="btn primary">Lưu ghi chú</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<div id="cleanDbModal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content modal-md">
+        <div class="modal-header" style="background: #fef2f2; border-bottom: 1px solid #fecaca;">
+            <div>
+                <h2 style="color: #991b1b; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    Dọn dẹp Database (Xóa thủ công)
+                </h2>
+                <p style="margin: 4px 0 0; font-size: 0.85rem; color: #b91c1c;">
+                    Chủ động dọn dẹp các email tạm của Khách &amp; API. Bảo vệ an toàn tuyệt đối cho Admin!
+                </p>
+            </div>
+            <button class="btn-close" type="button" data-modal-close="cleanDbModal">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body" style="padding: 20px;">
+            <div id="cleanDbStatsLoading" style="text-align: center; padding: 20px;">
+                <div class="spinner"></div>
+                <p style="margin-top: 10px; color: #64748b;">Đang tải dữ liệu lưu trữ...</p>
+            </div>
+
+            <div id="cleanDbStatsContainer" class="hidden">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center;">
+                        <span style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase;">Khách tự tạo</span>
+                        <div id="cleanUserCount" style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 4px;">0</div>
+                    </div>
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center;">
+                        <span style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase;">Hệ thống / API</span>
+                        <div id="cleanApiCount" style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 4px;">0</div>
+                    </div>
+                    <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 12px; text-align: center;">
+                        <span style="font-size: 11px; font-weight: 700; color: #047857; text-transform: uppercase;">Admin (Bảo vệ)</span>
+                        <div id="cleanAdminCount" style="font-size: 20px; font-weight: 800; color: #047857; margin-top: 4px;">0</div>
+                    </div>
+                </div>
+
+                <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px 14px; margin-bottom: 20px; display: flex; align-items: flex-start; gap: 10px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" style="flex-shrink: 0; margin-top: 2px;">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                    <div style="font-size: 13px; color: #1e40af; line-height: 1.5;">
+                        <strong>Cam kết an toàn:</strong> Toàn bộ email do <strong>ADMIN tạo</strong> sẽ được <strong>bảo vệ vĩnh viễn</strong> và <strong>không bao giờ bị xóa</strong> trong bất kỳ chế độ dọn dẹp nào!
+                    </div>
+                </div>
+
+                <form id="cleanDbForm">
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label style="font-weight: 600; font-size: 13px; color: #334155; margin-bottom: 8px; display: block;">Chọn phạm vi xóa:</label>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; background: #ffffff;">
+                                <input type="radio" name="clean_scope" value="days" checked>
+                                <div>
+                                    <span style="font-weight: 600; font-size: 13.5px; color: #0f172a;">Xóa email Khách &amp; API cũ hơn</span>
+                                    <input type="number" id="cleanDaysInput" value="30" min="1" max="365" style="width: 60px; padding: 2px 6px; margin: 0 6px; border: 1px solid #cbd5e1; border-radius: 4px; text-align: center; font-weight: 700;">
+                                    <span style="font-size: 13.5px; color: #0f172a;">ngày (Khuyên dùng: 30)</span>
+                                </div>
+                            </label>
+
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px 12px; border: 1px solid #fee2e2; border-radius: 8px; background: #fffaf0;">
+                                <input type="radio" name="clean_scope" value="all_guests">
+                                <div>
+                                    <span style="font-weight: 700; font-size: 13.5px; color: #b91c1c;">Xóa TẤT CẢ email Khách &amp; API ngay bây giờ</span>
+                                    <p style="margin: 2px 0 0; font-size: 12px; color: #78350f;">Dọn sạch toàn bộ mail khách &amp; API về 0. Giữ lại 100% email Admin.</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px;">
+                            <span style="color: #64748b;">Số email dự kiến sẽ xóa:</span>
+                            <strong id="previewDeleteEmailCount" style="color: #b91c1c;">Đang tính...</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 13px;">
+                            <span style="color: #64748b;">Số tin nhắn dự kiến sẽ xóa:</span>
+                            <strong id="previewDeleteMsgCount" style="color: #b91c1c;">Đang tính...</strong>
+                        </div>
+                    </div>
+
+                    <div class="form-actions" style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button type="button" class="btn secondary" data-modal-close="cleanDbModal">Đóng</button>
+                        <button type="submit" id="btnExecuteClean" class="btn danger" style="display: inline-flex; align-items: center; gap: 6px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                            <span>Xác nhận xóa ngay</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>

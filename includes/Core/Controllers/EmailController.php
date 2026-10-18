@@ -130,11 +130,12 @@ final class EmailController
         }
 
         // 3. Auto Clean DB (User & API tempmails older than 30 days, Admin emails preserved)
-        if ($request->string('action') === 'auto_clean' || $request->string('action') === 'clean_expired') {
+        if ($request->string('action') === 'auto_clean' || $request->string('action') === 'clean_expired' || $request->string('action') === 'clean_db') {
             Gate::authorize($context, Permission::EMAIL_DELETE);
             $days = $request->int('days', 30);
             $dryRun = (bool) ($request->param('dry_run') ?? false);
-            $result = $this->service->cleanExpiredEmails($days, $dryRun);
+            $allNonAdmin = (bool) ($request->param('all_non_admin') ?? false);
+            $result = $this->service->cleanExpiredEmails($days, $dryRun, $allNonAdmin);
             return Response::success($result);
         }
 

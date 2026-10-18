@@ -32,10 +32,14 @@ final class DatabaseCleanupService
      *
      * @param int $retentionDays Retention window in days (default: 30)
      * @param bool $dryRun If true, only calculate counts without deleting
+     * @param bool $allNonAdmin If true, deletes all non-admin emails regardless of age
      * @return array Metrics of the cleanup operation
      */
-    public function cleanExpiredEmails(int $retentionDays = self::DEFAULT_RETENTION_DAYS, bool $dryRun = false): array
-    {
+    public function cleanExpiredEmails(
+        int $retentionDays = self::DEFAULT_RETENTION_DAYS,
+        bool $dryRun = false,
+        bool $allNonAdmin = false
+    ): array {
         $days = max(1, $retentionDays);
         $startTime = microtime(true);
 
@@ -46,23 +50,27 @@ final class DatabaseCleanupService
         ");
         $retainedAdminEmails = (int) $stmtAdmin->fetchColumn();
 
-        // 2. Count candidate expired emails (user + api + guests older than N days)
-        $stmtCount = $this->db->prepare("
-            SELECT COUNT(*) FROM emails 
-            WHERE (created_by IS NULL OR created_by != 'admin')
-              AND created_at < DATE_SUB(NOW(), INTERVAL ? DAY)
-        ");
-        $stmtCount->execute([$days]);
+        // 2. Build target criteria
+        $whereClause = $allNonAdmin
+            ? "(created_by IS NULL OR created_by != 'admin')"
+            : "(created_by IS NULL OR created_by != 'admin') AND created_at < DATE_SUB(NOW(), INTERVAL ? DAY)";
+        $params = $allNonAdmin ? [] : [$days];
+
+        // Count candidate emails
+        $stmtCount = $this->db->prepare("SELECT COUNT(*) FROM emails WHERE {$whereClause}");
+        $stmtCount->execute($params);
         $expiredCount = (int) $stmtCount->fetchColumn();
 
-        // 3. Count messages associated with candidate expired emails
+        // Count candidate messages
+        $msgWhere = $allNonAdmin
+            ? "(e.created_by IS NULL OR e.created_by != 'admin')"
+            : "(e.created_by IS NULL OR e.created_by != 'admin') AND e.created_at < DATE_SUB(NOW(), INTERVAL ? DAY)";
         $stmtCountMsg = $this->db->prepare("
             SELECT COUNT(*) FROM messages m
             INNER JOIN emails e ON m.email_id = e.id
-            WHERE (e.created_by IS NULL OR e.created_by != 'admin')
-              AND e.created_at < DATE_SUB(NOW(), INTERVAL ? DAY)
+            WHERE {$msgWhere}
         ");
-        $stmtCountMsg->execute([$days]);
+        $stmtCountMsg->execute($params);
         $expiredMessagesCount = (int) $stmtCountMsg->fetchColumn();
 
         $deletedEmails = 0;
@@ -70,26 +78,24 @@ final class DatabaseCleanupService
         $deletedOrphans = 0;
 
         if (!$dryRun && $expiredCount > 0) {
-            // Delete messages belonging to expired emails first to avoid foreign key locks
+            // Delete messages belonging to target emails
             $stmtDelMsg = $this->db->prepare("
                 DELETE m FROM messages m
                 INNER JOIN emails e ON m.email_id = e.id
-                WHERE (e.created_by IS NULL OR e.created_by != 'admin')
-                  AND e.created_at < DATE_SUB(NOW(), INTERVAL ? DAY)
+                WHERE {$msgWhere}
             ");
-            $stmtDelMsg->execute([$days]);
+            $stmtDelMsg->execute($params);
             $deletedMessages = $stmtDelMsg->rowCount();
 
-            // Delete the expired emails (Strictly excluding admin emails)
+            // Delete the emails (Strictly excluding admin emails)
             $stmtDelEmails = $this->db->prepare("
                 DELETE FROM emails
-                WHERE (created_by IS NULL OR created_by != 'admin')
-                  AND created_at < DATE_SUB(NOW(), INTERVAL ? DAY)
+                WHERE {$whereClause}
             ");
-            $stmtDelEmails->execute([$days]);
+            $stmtDelEmails->execute($params);
             $deletedEmails = $stmtDelEmails->rowCount();
 
-            // Clean any orphaned messages where email_id no longer exists
+            // Clean orphaned messages
             try {
                 $stmtDelOrphans = $this->db->query("
                     DELETE m FROM messages m
@@ -98,10 +104,10 @@ final class DatabaseCleanupService
                 ");
                 $deletedOrphans = $stmtDelOrphans ? $stmtDelOrphans->rowCount() : 0;
             } catch (Throwable $e) {
-                // Ignore orphan query error if foreign key constraints handle it
+                // Ignore orphan query error
             }
 
-            // Update settings table with last cleanup info if settings table exists
+            // Update settings table with last cleanup info
             try {
                 $now = date('Y-m-d H:i:s');
                 $statsJson = json_encode([
@@ -109,7 +115,7 @@ final class DatabaseCleanupService
                     'deleted_emails' => $deletedEmails,
                     'deleted_messages' => $deletedMessages + $deletedOrphans,
                     'retained_admin_emails' => $retainedAdminEmails,
-                    'retention_days' => $days,
+                    'scope' => $allNonAdmin ? 'all_guests' : "{$days}_days",
                 ], JSON_UNESCAPED_UNICODE);
 
                 $stmtSetting = $this->db->prepare("
@@ -130,8 +136,9 @@ final class DatabaseCleanupService
         return [
             'success' => true,
             'dry_run' => $dryRun,
-            'retention_days' => $days,
-            'target_cutoff' => date('Y-m-d H:i:s', strtotime("-{$days} days")),
+            'all_non_admin' => $allNonAdmin,
+            'retention_days' => $allNonAdmin ? 0 : $days,
+            'target_cutoff' => $allNonAdmin ? 'Tất cả email Khách & API' : date('Y-m-d H:i:s', strtotime("-{$days} days")),
             'deleted_emails' => $dryRun ? $expiredCount : $deletedEmails,
             'deleted_messages' => $dryRun ? $expiredMessagesCount : ($deletedMessages + $deletedOrphans),
             'retained_admin_emails' => $retainedAdminEmails,
@@ -205,6 +212,25 @@ final class DatabaseCleanupService
         $stmtApiExpired->execute([$days]);
         $apiExpiredCount = (int) $stmtApiExpired->fetchColumn();
 
+        // Count pending messages for expired emails
+        $stmtPendingMsg = $this->db->prepare("
+            SELECT COUNT(*) FROM messages m
+            INNER JOIN emails e ON m.email_id = e.id
+            WHERE (e.created_by IS NULL OR e.created_by != 'admin')
+              AND e.created_at < DATE_SUB(NOW(), INTERVAL ? DAY)
+        ");
+        $stmtPendingMsg->execute([$days]);
+        $pendingMsgCount = (int) $stmtPendingMsg->fetchColumn();
+
+        // Total all guests (User + API)
+        $allGuestEmails = $userRecentCount + $userExpiredCount + $apiRecentCount + $apiExpiredCount;
+        $stmtAllGuestMsg = $this->db->query("
+            SELECT COUNT(*) FROM messages m
+            INNER JOIN emails e ON m.email_id = e.id
+            WHERE (e.created_by IS NULL OR e.created_by != 'admin')
+        ");
+        $allGuestMsgCount = $stmtAllGuestMsg ? (int) $stmtAllGuestMsg->fetchColumn() : 0;
+
         $lastCleanup = null;
         try {
             $stmt = $this->db->query("SELECT setting_value FROM settings WHERE setting_key = 'last_db_cleanup' LIMIT 1");
@@ -223,14 +249,19 @@ final class DatabaseCleanupService
                 'status' => 'PERMANENTLY_SAVED',
             ],
             'user_emails' => [
+                'total' => $userRecentCount + $userExpiredCount,
                 'retained_active' => $userRecentCount,
                 'pending_clean' => $userExpiredCount,
             ],
             'api_emails' => [
+                'total' => $apiRecentCount + $apiExpiredCount,
                 'retained_active' => $apiRecentCount,
                 'pending_clean' => $apiExpiredCount,
             ],
+            'total_all_guests' => $allGuestEmails,
+            'total_all_guest_messages' => $allGuestMsgCount,
             'total_pending_clean' => $userExpiredCount + $apiExpiredCount,
+            'total_pending_clean_messages' => $pendingMsgCount,
             'last_cleanup' => $lastCleanup,
             'server_time' => date('Y-m-d H:i:s'),
         ];

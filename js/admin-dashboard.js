@@ -14,6 +14,8 @@ class AdminDashboardPage {
         this.currentMessageEmailId = 0;
         this.currentMessageEmail = "";
         this.searchDebounceTimer = null;
+        this.retentionStatsCache = null;
+        this.cleanDaysDebounceTimer = null;
     }
 
     init() {
@@ -98,9 +100,28 @@ class AdminDashboardPage {
         deleteSelectedBtn?.addEventListener("click", () => this.deleteSelected());
         copySelectedBtn?.addEventListener("click", () => this.bulkCopy());
 
-        // Auto Clean DB button
+        // Auto Clean DB button & Manual Clean DB Modal
         const autoCleanDbBtn = document.getElementById("autoCleanDbBtn");
         autoCleanDbBtn?.addEventListener("click", () => this.handleAutoCleanDb());
+
+        const openCleanDbModalBtn = document.getElementById("openCleanDbModalBtn");
+        openCleanDbModalBtn?.addEventListener("click", () => this.loadCleanDbModalData());
+
+        document.querySelectorAll('input[name="clean_scope"]').forEach((radio) => {
+            radio.addEventListener("change", () => this.updateCleanDbPreview());
+        });
+
+        const cleanDaysInput = document.getElementById("cleanDaysInput");
+        cleanDaysInput?.addEventListener("input", () => {
+            if (this.cleanDaysDebounceTimer) clearTimeout(this.cleanDaysDebounceTimer);
+            this.cleanDaysDebounceTimer = setTimeout(() => {
+                const days = Math.max(1, Number(cleanDaysInput.value || "30"));
+                this.loadCleanDbModalData(days);
+            }, 350);
+        });
+
+        const cleanDbForm = document.getElementById("cleanDbForm");
+        cleanDbForm?.addEventListener("submit", (e) => this.handleManualCleanDbSubmit(e));
 
         // Fast Checker
         const checkerForm = document.getElementById("checkerForm");
@@ -596,6 +617,134 @@ class AdminDashboardPage {
             this.core.showToast("Lỗi kết nối khi dọn dẹp DB", "error");
         } finally {
             this.setLoading(false);
+        }
+    }
+
+    async loadCleanDbModalData(customDays = null) {
+        const loadingEl = document.getElementById("cleanDbStatsLoading");
+        const containerEl = document.getElementById("cleanDbStatsContainer");
+        const daysInput = document.getElementById("cleanDaysInput");
+        const days = customDays !== null ? customDays : Number(daysInput?.value || "30");
+
+        if (loadingEl && containerEl) {
+            loadingEl.classList.remove("hidden");
+            containerEl.classList.add("hidden");
+        }
+
+        try {
+            const { ok, data } = await this.core.fetchJson(`/api/admin/emails.php?action=retention_stats&days=${encodeURIComponent(days)}`);
+            if (!ok || !data) {
+                this.core.showToast("Không thể tải thông tin lưu trữ email", "error");
+                return;
+            }
+
+            this.retentionStatsCache = data;
+
+            // Populate badge numbers
+            const cleanUserCount = document.getElementById("cleanUserCount");
+            const cleanApiCount = document.getElementById("cleanApiCount");
+            const cleanAdminCount = document.getElementById("cleanAdminCount");
+
+            if (cleanUserCount) cleanUserCount.textContent = Number(data.user_emails?.total ?? 0).toLocaleString();
+            if (cleanApiCount) cleanApiCount.textContent = Number(data.api_emails?.total ?? 0).toLocaleString();
+            if (cleanAdminCount) cleanAdminCount.textContent = Number(data.admin_emails?.total ?? 0).toLocaleString();
+
+            this.updateCleanDbPreview();
+
+            if (loadingEl && containerEl) {
+                loadingEl.classList.add("hidden");
+                containerEl.classList.remove("hidden");
+            }
+        } catch (err) {
+            this.core.showToast("Lỗi khi tải thông tin lưu trữ", "error");
+        }
+    }
+
+    updateCleanDbPreview() {
+        if (!this.retentionStatsCache) return;
+        const isAllGuests = document.querySelector('input[name="clean_scope"]:checked')?.value === "all_guests";
+        const previewEmail = document.getElementById("previewDeleteEmailCount");
+        const previewMsg = document.getElementById("previewDeleteMsgCount");
+        const daysInput = document.getElementById("cleanDaysInput");
+
+        if (isAllGuests) {
+            if (daysInput) daysInput.disabled = true;
+            const totalGuests = Number(this.retentionStatsCache.total_all_guests ?? 0);
+            const totalGuestMsgs = Number(this.retentionStatsCache.total_all_guest_messages ?? 0);
+            if (previewEmail) previewEmail.textContent = `${totalGuests.toLocaleString()} email (TOÀN BỘ Khách & API)`;
+            if (previewMsg) previewMsg.textContent = `${totalGuestMsgs.toLocaleString()} tin nhắn`;
+        } else {
+            if (daysInput) daysInput.disabled = false;
+            const pendingEmails = Number(this.retentionStatsCache.total_pending_clean ?? 0);
+            const pendingMsgs = Number(this.retentionStatsCache.total_pending_clean_messages ?? 0);
+            const days = daysInput?.value || 30;
+            if (previewEmail) previewEmail.textContent = `${pendingEmails.toLocaleString()} email (> ${days} ngày)`;
+            if (previewMsg) previewMsg.textContent = `${pendingMsgs.toLocaleString()} tin nhắn`;
+        }
+    }
+
+    async handleManualCleanDbSubmit(event) {
+        event.preventDefault();
+        const isAllGuests = document.querySelector('input[name="clean_scope"]:checked')?.value === "all_guests";
+        const days = Math.max(1, Number(document.getElementById("cleanDaysInput")?.value || "30"));
+
+        const confirmTitle = isAllGuests 
+            ? "XÁC NHẬN: XÓA SẠCH TOÀN BỘ EMAIL KHÁCH & API?" 
+            : `Xác nhận xóa email Khách & API cũ hơn ${days} ngày?`;
+
+        const confirmText = isAllGuests
+            ? "CẢNH BÁO: Toàn bộ email do Khách và API tạo (kèm tất cả tin nhắn) sẽ bị xóa vĩnh viễn và đưa về 0! Email do ADMIN tạo được bảo vệ 100%, không bị ảnh hưởng. Bạn có chắc chắn muốn xóa không?"
+            : `Hệ thống sẽ xóa toàn bộ email do Khách và API tạo đã lưu hơn ${days} ngày (kèm toàn bộ tin nhắn). Email của ADMIN được bảo vệ vĩnh viễn. Bạn có chắc chắn?`;
+
+        const confirmed = await this.core.confirmAction({
+            title: confirmTitle,
+            text: confirmText,
+            confirmButtonText: isAllGuests ? "Xóa sạch toàn bộ" : "Xác nhận dọn dẹp",
+            cancelButtonText: "Hủy bỏ",
+            icon: "warning",
+        });
+
+        if (!confirmed) return;
+
+        const submitBtn = document.getElementById("btnExecuteClean");
+        const originalBtnHtml = submitBtn ? submitBtn.innerHTML : "";
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<span>Đang tiến hành dọn dẹp DB...</span>`;
+        }
+
+        try {
+            const { ok, data } = await this.core.postJson("/api/admin/emails.php", {
+                action: "clean_db",
+                days: days,
+                all_non_admin: isAllGuests,
+            });
+
+            if (!ok) {
+                this.core.showToast(data?.error || "Dọn dẹp DB thất bại", "error");
+                return;
+            }
+
+            const resData = data?.data || data;
+            const deletedEmails = Number(resData?.deleted_emails ?? 0);
+            const deletedMessages = Number(resData?.deleted_messages ?? 0);
+            const retainedAdmin = Number(resData?.retained_admin_emails ?? 0);
+
+            this.core.closeModal("cleanDbModal");
+
+            this.core.showToast(
+                `Dọn dẹp hoàn tất! Đã xóa ${deletedEmails.toLocaleString()} email & ${deletedMessages.toLocaleString()} tin nhắn. Bảo vệ an toàn ${retainedAdmin.toLocaleString()} email Admin.`,
+                "success"
+            );
+
+            await this.reloadData();
+        } catch (error) {
+            this.core.showToast("Lỗi kết nối khi dọn dẹp DB", "error");
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnHtml;
+            }
         }
     }
 

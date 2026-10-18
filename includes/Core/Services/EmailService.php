@@ -154,7 +154,22 @@ final class EmailService
         ");
         $stmt->execute([$email]);
         $row = $stmt->fetch();
-        return is_array($row) ? $row : null;
+        if (!is_array($row)) {
+            return null;
+        }
+
+        // Enforce 30-day retention on-the-fly for non-admin accounts
+        $createdBy = strtolower((string) ($row['created_by'] ?? ''));
+        if ($createdBy !== 'admin') {
+            $retentionDays = defined('TEMPMAIL_RETENTION_DAYS') ? (int) TEMPMAIL_RETENTION_DAYS : 30;
+            $createdAtTs = strtotime((string) ($row['created_at'] ?? ''));
+            if ($createdAtTs > 0 && (time() - $createdAtTs) > ($retentionDays * 86400)) {
+                $this->deleteByAddress($email);
+                return null;
+            }
+        }
+
+        return $row;
     }
 
     /**
@@ -174,7 +189,21 @@ final class EmailService
         ");
         $stmt->execute([$id]);
         $row = $stmt->fetch();
-        return is_array($row) ? $row : null;
+        if (!is_array($row)) {
+            return null;
+        }
+
+        $createdBy = strtolower((string) ($row['created_by'] ?? ''));
+        if ($createdBy !== 'admin') {
+            $retentionDays = defined('TEMPMAIL_RETENTION_DAYS') ? (int) TEMPMAIL_RETENTION_DAYS : 30;
+            $createdAtTs = strtotime((string) ($row['created_at'] ?? ''));
+            if ($createdAtTs > 0 && (time() - $createdAtTs) > ($retentionDays * 86400)) {
+                $this->deleteEmails([(int) $row['id']]);
+                return null;
+            }
+        }
+
+        return $row;
     }
 
     /**
@@ -414,10 +443,10 @@ final class EmailService
      * Clean expired temporary emails created by 'user' and 'api' (older than 30 days by default).
      * Strictly preserves all emails created by 'admin'.
      */
-    public function cleanExpiredEmails(int $retentionDays = DatabaseCleanupService::DEFAULT_RETENTION_DAYS, bool $dryRun = false): array
+    public function cleanExpiredEmails(int $retentionDays = DatabaseCleanupService::DEFAULT_RETENTION_DAYS, bool $dryRun = false, bool $allNonAdmin = false): array
     {
         $cleanupService = new DatabaseCleanupService($this->db);
-        return $cleanupService->cleanExpiredEmails($retentionDays, $dryRun);
+        return $cleanupService->cleanExpiredEmails($retentionDays, $dryRun, $allNonAdmin);
     }
 
     /**

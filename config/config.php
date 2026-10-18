@@ -87,6 +87,9 @@ define('ADMIN_ACCESS_KEY', envRequired('ADMIN_ACCESS_KEY'));
 define('ADMIN_DEFAULT_ID', 1);
 define('ADMIN_DEFAULT_USERNAME', 'admin');
 
+// Temporary Email Retention Policy: User & API emails older than this (in days) are purged. Admin emails are permanently preserved.
+define('TEMPMAIL_RETENTION_DAYS', max(1, (int) env('TEMPMAIL_RETENTION_DAYS', 30)));
+
 define('SESSION_NAME', (string) env('SESSION_NAME', 'kaimail_session'));
 define('SESSION_LIFETIME', (int) env('SESSION_LIFETIME', 86400));
 $sessionCookieSameSite = (string) env('SESSION_COOKIE_SAMESITE', 'Lax');
