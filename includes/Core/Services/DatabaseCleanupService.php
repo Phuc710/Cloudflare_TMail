@@ -78,33 +78,51 @@ final class DatabaseCleanupService
         $deletedOrphans = 0;
 
         if (!$dryRun && $expiredCount > 0) {
-            // Delete messages belonging to target emails
-            $stmtDelMsg = $this->db->prepare("
-                DELETE m FROM messages m
-                INNER JOIN emails e ON m.email_id = e.id
-                WHERE {$msgWhere}
-            ");
-            $stmtDelMsg->execute($params);
-            $deletedMessages = $stmtDelMsg->rowCount();
+            @set_time_limit(300);
+            @ini_set('memory_limit', '512M');
 
-            // Delete the emails (Strictly excluding admin emails)
-            $stmtDelEmails = $this->db->prepare("
-                DELETE FROM emails
-                WHERE {$whereClause}
-            ");
-            $stmtDelEmails->execute($params);
-            $deletedEmails = $stmtDelEmails->rowCount();
-
-            // Clean orphaned messages
             try {
-                $stmtDelOrphans = $this->db->query("
+                // Tắt kiểm tra khóa ngoại để có quyền xóa root cao nhất, không bị chặn bởi bất kỳ ràng buộc nào
+                $this->db->exec("SET FOREIGN_KEY_CHECKS = 0");
+
+                // 1. Xóa toàn bộ tin nhắn liên kết với các email mục tiêu
+                $stmtDelMsg = $this->db->prepare("
                     DELETE m FROM messages m
-                    LEFT JOIN emails e ON m.email_id = e.id
-                    WHERE e.id IS NULL
+                    INNER JOIN emails e ON m.email_id = e.id
+                    WHERE {$msgWhere}
                 ");
-                $deletedOrphans = $stmtDelOrphans ? $stmtDelOrphans->rowCount() : 0;
+                $stmtDelMsg->execute($params);
+                $deletedMessages = $stmtDelMsg->rowCount();
+
+                // 2. Xóa các email mục tiêu (Luôn bảo vệ email do Admin tạo)
+                $stmtDelEmails = $this->db->prepare("
+                    DELETE FROM emails
+                    WHERE {$whereClause}
+                ");
+                $stmtDelEmails->execute($params);
+                $deletedEmails = $stmtDelEmails->rowCount();
+
+                // 3. Quét sạch triệt để mọi tin nhắn mồ côi nếu có
+                try {
+                    $stmtDelOrphans = $this->db->query("
+                        DELETE m FROM messages m
+                        LEFT JOIN emails e ON m.email_id = e.id
+                        WHERE e.id IS NULL
+                    ");
+                    $deletedOrphans = $stmtDelOrphans ? $stmtDelOrphans->rowCount() : 0;
+                } catch (Throwable $e) {
+                    // Bỏ qua lỗi orphan
+                }
             } catch (Throwable $e) {
-                // Ignore orphan query error
+                error_log("DatabaseCleanupService execution error: " . $e->getMessage());
+                throw $e;
+            } finally {
+                // Bật lại kiểm tra khóa ngoại sau khi xóa xong
+                try {
+                    $this->db->exec("SET FOREIGN_KEY_CHECKS = 1");
+                } catch (Throwable $e) {
+                    // Ignore
+                }
             }
 
             // Update settings table with last cleanup info

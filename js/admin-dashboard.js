@@ -721,7 +721,8 @@ class AdminDashboardPage {
             });
 
             if (!ok) {
-                this.core.showToast(data?.error || "Dọn dẹp DB thất bại", "error");
+                const errMsg = data?.message || data?.error || "Dọn dẹp DB thất bại";
+                this.core.showToast(errMsg, "error");
                 return;
             }
 
